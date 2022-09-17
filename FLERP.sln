@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32630.192
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FLERP", "FLERP\FLERP.csproj", "{43CB4415-DBE9-421A-95AE-5F6824F6E5FC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{43CB4415-DBE9-421A-95AE-5F6824F6E5FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43CB4415-DBE9-421A-95AE-5F6824F6E5FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43CB4415-DBE9-421A-95AE-5F6824F6E5FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43CB4415-DBE9-421A-95AE-5F6824F6E5FC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6B300789-A53C-45F5-AEE8-14779B62E6B0}
+	EndGlobalSection
+EndGlobal
