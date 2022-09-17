@@ -15,16 +15,18 @@ namespace FLERP
     [BepInPlugin("Game.Lilly.Plugin", "Lilly", "1.0")]
     public class Lilly : BaseUnityPlugin
     {
+        //=======================================================
+
         public static ManualLogSource logger;
 
-        static Harmony harmony;
+        public static Harmony harmony;
 
         public ConfigEntry<BepInEx.Configuration.KeyboardShortcut> ShowCounter;
 
-        private ConfigEntry<bool> isGUIOn;
-        private ConfigEntry<bool> isOpen;
-        private ConfigEntry<float> uiW;
-        private ConfigEntry<float> uiH;
+        public ConfigEntry<bool> isGUIOn;
+        public ConfigEntry<bool> isOpen;
+        public ConfigEntry<float> uiW;
+        public ConfigEntry<float> uiH;
 
         public int windowId = 542;
         public Rect windowRect;
@@ -33,12 +35,13 @@ namespace FLERP
         public string FullName = "Plugin";
         public string ShortName = "P";
 
-        GUILayoutOption h;
-        GUILayoutOption w;
+        public GUILayoutOption h;
+        public GUILayoutOption w;
         public Vector2 scrollPosition;
 
+        //=======================================================
 
-        static Type buildGadgetMenu;
+        public static Type buildGadgetMenu;
         public static ConfigEntry<int> rerollCost;
         //public static int rerollCost = 1;
         public static ConfigEntry<int> baseGadgetCount;
@@ -52,7 +55,12 @@ namespace FLERP
         public static ConfigEntry<bool> removeFromShop;
         public static ConfigEntry<bool> customShop;
 
+        public static ConfigEntry<bool> customRandomSpawnPosition;
+
         public static ConfigEntry<bool> eMultOn;
+        public static ConfigEntry<bool> eMultRndOn;
+
+        public static ConfigEntry<float> eMultRnd;
 
         public static ConfigEntry<float> eHealthMult;
         public static ConfigEntry<float> eArmorMult;
@@ -64,11 +72,13 @@ namespace FLERP
         public static ConfigEntry<float> eDamageAdd;
         public static ConfigEntry<float> eSpeedAdd;
 
+        public static ConfigEntry<float> mHealthMult;
+
         public const float speed = 1 / 8f;
 
+        public static CodeMatch matches = new CodeMatch(OpCodes.Ldc_I4, 1800);
+        public static CodeInstruction instruction;
 
-        static CodeMatch matches = new CodeMatch(OpCodes.Ldc_I4, 1800);
-        static CodeInstruction instruction ;
         public void Awake()
         {
             logger = Logger;
@@ -89,41 +99,69 @@ namespace FLERP
 
             IsOpen_SettingChanged(null, null);
 
-            // BuildGadgetMenu.rerollCost : int @0400067A
-            //buildGadgetMenu = AccessTools.TypeByName("BuildGadgetMenu");
-            buildGadgetMenu = typeof(BuildGadgetMenu);
+            //=======================================================
+            try
+            {
 
-            survivedOn = Config.Bind("Game", "survivedOn", true);
-            survived = Config.Bind("Game", "survived", 180);
+                // BuildGadgetMenu.rerollCost : int @0400067A
+                //buildGadgetMenu = AccessTools.TypeByName("BuildGadgetMenu");
+                buildGadgetMenu = typeof(BuildGadgetMenu);
 
-            rerollCost = Config.Bind("Game", "rerollCost", 1);
-            rerollCostItem = Config.Bind("Game", "rerollCostItem", 4);
-            baseGadgetCount = Config.Bind("Game", "baseGadgetCount", 8);
-            removeFromShop = Config.Bind("Game", "removeFromShop", false);
+                Logger.LogMessage("Awake1");
 
-            customShop = Config.Bind("Game", "customShop", true);
+                survivedOn = Config.Bind("Game", "survivedOn", true);
+                survived = Config.Bind("Game", "survived", 0);
 
+                rerollCost = Config.Bind("Game", "rerollCost", 1);
+                rerollCostItem = Config.Bind("Game", "rerollCostItem", 4);
+                baseGadgetCount = Config.Bind("Game", "baseGadgetCount", 8);
+                removeFromShop = Config.Bind("Game", "removeFromShop", false);
 
-            pickupRadius = Config.Bind("Game", "pickupRadius", 50f);
-            addGainXP = Config.Bind("Game", "addGainXP", 9);
+                customShop = Config.Bind("Game", "customShop", true);
 
-            eMultOn = Config.Bind("Game", "eMultOn", false);
-            //eHealthMult = Config.Bind("Game", "eMult", 2f);
+                Logger.LogMessage("Awake2");
 
-            eHealthMult = Config.Bind("Game", "eHealthMult", 2f);
-            eArmorMult = Config.Bind("Game", "eArmorMult", 2f);
-            eDamageMult = Config.Bind("Game", "eDamageMult", 2f);
-            eSpeedMult = Config.Bind("Game", "eSpeedMult", 2f);
+                pickupRadius = Config.Bind("Game", "pickupRadius", 50f);
+                addGainXP = Config.Bind("Game", "addGainXP", 9);
 
-            eHealthAdd = Config.Bind("Game", "eHealthAdd", 1f);
-            eArmorAdd = Config.Bind("Game", "eArmorAdd", 1f);
-            eDamageAdd = Config.Bind("Game", "eDamageAdd", 1f);
-            eSpeedAdd = Config.Bind("Game", "eSpeedAdd", 1f);
+                Logger.LogMessage("Awake3");
 
-            instruction = new CodeInstruction(
-                                            OpCodes.Ldc_I4,
-                                            survived.Value
-                                            );
+                customRandomSpawnPosition = Config.Bind("Game", "customRandomSpawnPosition", true);
+
+                eMultOn = Config.Bind("Game", "eMultOn", true);
+                eMultRndOn = Config.Bind("Game", "eMultRndOn", true);
+                //eMult = Config.Bind("Game", "eMult", 2f);
+
+                eMultRnd = Config.Bind("Game", "eMultRnd", 2f);
+
+                Logger.LogMessage("Awake4");
+
+                eHealthMult = Config.Bind("Game", "eHealthMult", 2f);
+                eArmorMult = Config.Bind("Game", "eArmorMult", 2f);
+                eDamageMult = Config.Bind("Game", "eDamageMult", 2f);
+                eSpeedMult = Config.Bind("Game", "eSpeedMult", 2f);
+
+                Logger.LogMessage("Awake5");
+
+                eHealthAdd = Config.Bind("Game", "eHealthAdd", 1f);
+                eArmorAdd = Config.Bind("Game", "eArmorAdd", 1f);
+                eDamageAdd = Config.Bind("Game", "eDamageAdd", 1f);
+                eSpeedAdd = Config.Bind("Game", "eSpeedAdd", 1f);
+
+                mHealthMult = Config.Bind("Game", "mHealthMult", 1f);
+
+                Logger.LogMessage("Awake6");
+
+                instruction = new CodeInstruction(
+                                                OpCodes.Ldc_I4,
+                                                survived.Value
+                                                );
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e);
+            }
+            //=======================================================
         }
 
         public void IsOpen_SettingChanged(object sender, EventArgs e)
@@ -268,12 +306,38 @@ namespace FLERP
                 GUILayout.EndHorizontal();
                 //
 
-                GUILayout.Label("=== Enemy ===");
+                GUILayout.Label("=== Player ===");
 
+                if (GUILayout.Button("gold add 100")) { MoneyManager.instance.AddMoney(100); }
 
                 GUILayout.Label("--- when Spawn ---");
-                GUILayout.Label("HP=HealthMult * (1f + 0.8f * currNgBuffRatio)*eHealthMult");
-                if (GUILayout.Button($"Mult apply: {eMultOn.Value}")) { eMultOn.Value = !eMultOn.Value; }
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"eHealthMult : {mHealthMult.Value}");
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { mHealthMult.Value = 1f; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { mHealthMult.Value -= speed; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { mHealthMult.Value += speed; }
+                GUILayout.EndHorizontal();
+
+                GUILayout.Label("=== Enemy ===");
+
+                if (GUILayout.Button($"customRandomSpawnPosition : {customRandomSpawnPosition.Value}")) { customRandomSpawnPosition.Value = !customRandomSpawnPosition.Value; }
+
+                GUILayout.Label("--- when Spawn ---");
+                GUILayout.Label("HP=HealthMult * (1f + 0.8f * currNgBuffRatio)*eHealthMult*Rnd(1,eMultRnd)");
+                if (GUILayout.Button($"Mult apply : {eMultOn.Value}")) { eMultOn.Value = !eMultOn.Value; }
+                
+                if (GUILayout.Button($"Mult Rnd : {eMultRndOn.Value}")) { eMultRndOn.Value = !eMultRndOn.Value; }
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"eMultRnd : {eMultRnd.Value}");
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eMultRnd.Value = 1f; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eMultRnd.Value -= speed; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eMultRnd.Value += speed; }
+                GUILayout.EndHorizontal();
+
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"eHealthMult : {eHealthMult.Value}");
                 GUILayout.FlexibleSpace();
@@ -400,7 +464,7 @@ namespace FLERP
 
         [HarmonyPatch(typeof(GameEnder), "InitiateLoseGame")]
         [HarmonyTranspiler]
-        private static IEnumerable<CodeInstruction> InitiateLoseGame(IEnumerable<CodeInstruction> instructions)
+        public static IEnumerable<CodeInstruction> InitiateLoseGame(IEnumerable<CodeInstruction> instructions)
         {
             try
             {
@@ -439,7 +503,7 @@ namespace FLERP
         [HarmonyPatch(typeof(GameEnder), "LoseGameCR", MethodType.Enumerator)]
         [HarmonyTranspiler]
 
-        private static IEnumerable<CodeInstruction> LoseGameCR(IEnumerable<CodeInstruction> instructions)
+        public static IEnumerable<CodeInstruction> LoseGameCR(IEnumerable<CodeInstruction> instructions)
         {
             try
             {
@@ -485,7 +549,7 @@ namespace FLERP
             ___pickupRadius = pickupRadius.Value;
         }
 
-        static Dictionary<GadgetSO, AGadget> upgradableGadgets;
+        public static Dictionary<GadgetSO, AGadget> upgradableGadgets;
 
         [HarmonyPatch(typeof(GadgetManager), MethodType.Constructor)]
         [HarmonyPostfix]
@@ -585,51 +649,121 @@ namespace FLERP
         }
         */
 
+
+        [HarmonyPatch(typeof(HealthManager), "SetMaxHealth")]
+        [HarmonyPrefix]
+        public static void SetMaxHealth(ref float maxHealth ,  bool ___isFriendly)
+        {
+            if (___isFriendly)
+            {
+                logger.LogWarning($"SetMaxHealth {maxHealth}");
+                maxHealth *= mHealthMult.Value;
+            }
+        }
+
+        #region 적
+
+        public static float SetMult(float modifier, float m)
+        {
+            if (!eMultOn.Value)
+            {
+                return modifier;
+            }
+            if (eMultRndOn.Value)
+            {
+                modifier *= m * UnityEngine.Random.Range(1f, eMultRnd.Value);
+            }
+            else
+            {
+                modifier *= m;
+            }
+            return modifier;
+        }
+
+        /// <summary>
+        /// 적 전용
+        /// </summary>
+        /// <param name="modifier"></param>
         [HarmonyPatch(typeof(HealthManager), "SetMaxHealthModifier")]
         [HarmonyPrefix]
         public static void SetMaxHealthModifier(ref float modifier)
         {
-            if (!eMultOn.Value)
-            {
-                return;
-            }
-            modifier *= eHealthMult.Value;
+            modifier = SetMult(modifier, eHealthMult.Value);
         }
-
 
         [HarmonyPatch(typeof(HealthUnit), "ArmorMult", MethodType.Setter)]
         [HarmonyPrefix]
         public static void SetArmorMult(ref float __0)
         {
-            if (!eMultOn.Value)
-            {
-                return;
-            }
-            __0 *= eArmorMult.Value;
+            __0 = SetMult(__0, eArmorMult.Value);
         }
-
 
         [HarmonyPatch(typeof(Steerer), "MoveSpeedMult", MethodType.Setter)]
         [HarmonyPrefix]
         public static void SetMoveSpeedMult(ref float __0)
         {
-            if (!eMultOn.Value)
-            {
-                return;
-            }
-            __0 *= eSpeedMult.Value;
+            __0 = SetMult(__0, eSpeedMult.Value);
         }
 
         [HarmonyPatch(typeof(AEnemy), "DamageMult", MethodType.Setter)]
         [HarmonyPrefix]
         public static void SetDamageMult(ref float __0)
         {
-            if (!eMultOn.Value)
-            {
-                return;
-            }
-            __0 *= eDamageMult.Value;
+            __0 = SetMult(__0, eDamageMult.Value);
         }
 
+        [HarmonyPatch(typeof(EnemySpawner), "GetRandomSpawnPosition")]
+        [HarmonyPrefix]
+        public static bool GetRandomSpawnPosition(ref Vector2 __result)
+        {
+            if (!customRandomSpawnPosition.Value)
+            {
+            return true;
+            }
+            var v = UnityEngine.Random.insideUnitCircle;
+            __result = v * 20+v.normalized*20;
+            return false;
+        }
+
+
+        /// <summary>
+        /// ___steerer != null 참일 경우 적
+        /// </summary>
+        /// <param name="__instance"></param>
+        /// <param name="damage"></param>
+        /// <param name="armorPen"></param>
+        /// <param name="___steerer"></param>
+        [HarmonyPatch(typeof(HealthUnit), "TakeDamage")]
+        [HarmonyPrefix]
+        public static void TakeDamage(HealthUnit __instance, float damage, float armorPen, Steerer ___steerer)
+        {
+            logger.LogWarning($"TakeDamage {___steerer != null} , {damage} , {armorPen} , {__instance.TotalArmor}");
+        }
+
+        /*
+        /// <summary>
+        /// ___isFriendly==false일 경우 적
+        /// </summary>
+        /// <param name="__instance"></param>
+        /// <param name="amount"></param>
+        /// <param name="___isFriendly"></param>
+        [HarmonyPatch(typeof(HealthManager), "LoseHealth")]
+        [HarmonyPrefix]
+        public static void LoseHealth(HealthManager __instance, float amount, bool ___isFriendly)
+        {
+            logger.LogWarning($"LoseHealth {___isFriendly} , {amount} , {__instance.currHealth} , {__instance.MaxHealth}");
+        }
+
+        [HarmonyPatch(typeof(HealthManager), "LoseHealth")]
+        [HarmonyPostfix]
+        public static void LoseHealth2(HealthManager __instance, float __result, bool ___isFriendly)
+        {
+            logger.LogWarning($"LoseHealth {___isFriendly} ,  {__result} , {__instance.currHealth} , {__instance.MaxHealth}");
+        }
+
+        */
+
+
+        #endregion
     }
 }
