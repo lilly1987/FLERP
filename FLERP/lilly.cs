@@ -5,6 +5,7 @@ using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -43,6 +44,10 @@ namespace FLERP
         public static ConfigEntry<int> baseGadgetCount;
         public static ConfigEntry<int> rerollCostItem;
         public static ConfigEntry<int> addGainXP;
+
+        public static ConfigEntry<bool> survivedOn;
+        public static ConfigEntry<int> survived;
+
         public static ConfigEntry<float> pickupRadius;
         public static ConfigEntry<bool> removeFromShop;
         public static ConfigEntry<bool> customShop;
@@ -53,12 +58,17 @@ namespace FLERP
         public static ConfigEntry<float> eArmorMult;
         public static ConfigEntry<float> eDamageMult;
         public static ConfigEntry<float> eSpeedMult;
-        
+
         public static ConfigEntry<float> eHealthAdd;
         public static ConfigEntry<float> eArmorAdd;
         public static ConfigEntry<float> eDamageAdd;
         public static ConfigEntry<float> eSpeedAdd;
 
+        public const float speed = 1 / 8f;
+
+
+        static CodeMatch matches = new CodeMatch(OpCodes.Ldc_I4, 1800);
+        static CodeInstruction instruction ;
         public void Awake()
         {
             logger = Logger;
@@ -82,14 +92,18 @@ namespace FLERP
             // BuildGadgetMenu.rerollCost : int @0400067A
             //buildGadgetMenu = AccessTools.TypeByName("BuildGadgetMenu");
             buildGadgetMenu = typeof(BuildGadgetMenu);
-            
+
+            survivedOn = Config.Bind("Game", "survivedOn", true);
+            survived = Config.Bind("Game", "survived", 180);
+
             rerollCost = Config.Bind("Game", "rerollCost", 1);
             rerollCostItem = Config.Bind("Game", "rerollCostItem", 4);
             baseGadgetCount = Config.Bind("Game", "baseGadgetCount", 8);
             removeFromShop = Config.Bind("Game", "removeFromShop", false);
+
             customShop = Config.Bind("Game", "customShop", true);
-            
-            
+
+
             pickupRadius = Config.Bind("Game", "pickupRadius", 50f);
             addGainXP = Config.Bind("Game", "addGainXP", 9);
 
@@ -100,11 +114,16 @@ namespace FLERP
             eArmorMult = Config.Bind("Game", "eArmorMult", 2f);
             eDamageMult = Config.Bind("Game", "eDamageMult", 2f);
             eSpeedMult = Config.Bind("Game", "eSpeedMult", 2f);
-            
+
             eHealthAdd = Config.Bind("Game", "eHealthAdd", 1f);
             eArmorAdd = Config.Bind("Game", "eArmorAdd", 1f);
             eDamageAdd = Config.Bind("Game", "eDamageAdd", 1f);
             eSpeedAdd = Config.Bind("Game", "eSpeedAdd", 1f);
+
+            instruction = new CodeInstruction(
+                                            OpCodes.Ldc_I4,
+                                            survived.Value
+                                            );
         }
 
         public void IsOpen_SettingChanged(object sender, EventArgs e)
@@ -177,6 +196,18 @@ namespace FLERP
 
                 //
 
+                GUILayout.Label("=== Time ===");
+                GUILayout.Label("need game restart");
+
+                if (GUILayout.Button($"survived time : {survivedOn.Value}")) { survivedOn.Value = !survivedOn.Value; }
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"survived time : {survived.Value}");
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { survived.Value -= 60; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { survived.Value += 60; }
+                GUILayout.EndHorizontal();
+
                 GUILayout.Label("=== Shop ===");
 
                 if (GUILayout.Button($"custom Shop : {customShop.Value}")) { customShop.Value = !customShop.Value; }
@@ -190,6 +221,7 @@ namespace FLERP
                 if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { AccessTools.Field(buildGadgetMenu, "rerollCost").SetValue(BuildGadgetMenu.instance, ++rerollCost.Value); }
                 GUILayout.EndHorizontal();
                 //             
+
                 if (GadgetManager.instance != null)
                 {
                     GUILayout.BeginHorizontal();
@@ -208,7 +240,7 @@ namespace FLERP
                 GUILayout.EndHorizontal();
                 //
 
-                GUILayout.Label("=== Shop ===");
+                GUILayout.Label("=== Item ===");
 
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"Item rerollCost -= : {rerollCostItem.Value}");
@@ -223,8 +255,8 @@ namespace FLERP
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"pickupRadius : {pickupRadius.Value}");
                 GUILayout.FlexibleSpace();
-                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { pickupRadius.Value -= 5f; }
-                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { pickupRadius.Value += 5f; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { pickupRadius.Value -= 5; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { pickupRadius.Value += 5; }
                 GUILayout.EndHorizontal();
                 //
 
@@ -237,8 +269,8 @@ namespace FLERP
                 //
 
                 GUILayout.Label("=== Enemy ===");
-                               
-                                
+
+
                 GUILayout.Label("--- when Spawn ---");
                 GUILayout.Label("HP=HealthMult * (1f + 0.8f * currNgBuffRatio)*eHealthMult");
                 if (GUILayout.Button($"Mult apply: {eMultOn.Value}")) { eMultOn.Value = !eMultOn.Value; }
@@ -246,29 +278,32 @@ namespace FLERP
                 GUILayout.Label($"eHealthMult : {eHealthMult.Value}");
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eHealthMult.Value = 1f; }
-                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eHealthMult.Value -= 0.1f; }
-                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eHealthMult.Value += 0.1f; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eHealthMult.Value -= speed; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eHealthMult.Value += speed; }
                 GUILayout.EndHorizontal();
+
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"eArmorMult : {eArmorMult.Value}");
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eArmorMult.Value = 1f; }
-                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eArmorMult.Value -= 0.1f; }
-                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eArmorMult.Value += 0.1f; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eArmorMult.Value -= speed; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eArmorMult.Value += speed; }
                 GUILayout.EndHorizontal();
+
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"eDamageMult : {eDamageMult.Value}");
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eDamageMult.Value = 1f; }
-                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eDamageMult.Value -= 0.1f; }
-                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eDamageMult.Value += 0.1f; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eDamageMult.Value -= speed; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eDamageMult.Value += speed; }
                 GUILayout.EndHorizontal();
+
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"eSpeedMult : {eSpeedMult.Value}");
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eSpeedMult.Value = 1f; }
-                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eSpeedMult.Value -= 0.1f; }
-                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eSpeedMult.Value += 0.1f; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eSpeedMult.Value -= speed; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eSpeedMult.Value += speed; }
                 GUILayout.EndHorizontal();
 
                 GUILayout.Label("--- edit property ---");
@@ -309,23 +344,26 @@ namespace FLERP
                     if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult -= eHealthAdd.Value; }
                     if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult += eHealthAdd.Value; }
                     GUILayout.EndHorizontal();
+
                     GUILayout.BeginHorizontal();
                     GUILayout.Label($"ArmorMult : {EnemySpawner.instance.ArmorMult}");
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult -= eArmorAdd.Value ; }
-                    if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult += eArmorAdd.Value ; }
+                    if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult -= eArmorAdd.Value; }
+                    if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult += eArmorAdd.Value; }
                     GUILayout.EndHorizontal();
+
                     GUILayout.BeginHorizontal();
                     GUILayout.Label($"DamageMult : {EnemySpawner.instance.DamageMult}");
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult -= eDamageAdd.Value ; }
-                    if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult += eDamageAdd.Value ; }
+                    if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult -= eDamageAdd.Value; }
+                    if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult += eDamageAdd.Value; }
                     GUILayout.EndHorizontal();
+
                     GUILayout.BeginHorizontal();
                     GUILayout.Label($"SpeedMult : {EnemySpawner.instance.SpeedMult}");
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult -= eSpeedAdd.Value ; }
-                    if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult += eSpeedAdd.Value ; }
+                    if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult -= eSpeedAdd.Value; }
+                    if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult += eSpeedAdd.Value; }
                     GUILayout.EndHorizontal();
 
                 }
@@ -344,10 +382,80 @@ namespace FLERP
 
         public void OnDisable()
         {
-            Logger.LogWarning("OnDisable");
+            logger.LogWarning("OnDisable");
             harmony?.UnpatchSelf();
 
         }
+        /*
+        static Clock clock;
+
+        [HarmonyPatch(typeof(Clock), MethodType.Constructor)]
+        [HarmonyPostfix]
+        public static void ClockCtor(Clock __instance)
+        {
+            clock = __instance;
+        }
+        */
+
+
+        [HarmonyPatch(typeof(GameEnder), "InitiateLoseGame")]
+        [HarmonyTranspiler]
+        private static IEnumerable<CodeInstruction> InitiateLoseGame(IEnumerable<CodeInstruction> instructions)
+        {
+            try
+            {
+                CodeMatcher codeMatcher = new CodeMatcher(instructions)
+                    .MatchForward(false
+                        , matches
+                    );
+
+                if (codeMatcher.Pos == codeMatcher.Length)
+                {
+                    logger.LogError($"GameEnder.InitiateLoseGame not Match {codeMatcher.Pos} {codeMatcher.Length}");
+                    return instructions;
+                }
+                else
+                {
+                    logger.LogMessage($"GameEnder.InitiateLoseGame Match {codeMatcher.Pos} {codeMatcher.Length}");
+                }
+
+                return codeMatcher
+                    .SetInstruction(
+                        new CodeInstruction(
+                            OpCodes.Ldc_I4,
+                            survived.Value
+                            )
+                    )
+                    .InstructionEnumeration();
+            }
+            catch (Exception e)
+            {
+                logger.LogError($"GameEnder.InitiateLoseGame {e}");
+                return instructions;
+            }
+        }
+
+
+        [HarmonyPatch(typeof(GameEnder), "LoseGameCR", MethodType.Enumerator)]
+        [HarmonyTranspiler]
+
+        private static IEnumerable<CodeInstruction> LoseGameCR(IEnumerable<CodeInstruction> instructions)
+        {
+            try
+            {
+                return new CodeMatcher(instructions)
+                .MatchForward(false, matches).SetInstruction(instruction)
+                .MatchForward(false, matches).SetInstruction(instruction)
+                .MatchForward(false, matches).SetInstruction(instruction)
+                .InstructionEnumeration();
+            }
+            catch (Exception e)
+            {
+                logger.LogError($"GameEnder.LoseGameCR {e}");
+                return instructions;
+            }
+        }
+
 
         [HarmonyPatch(typeof(BuildGadgetMenu), MethodType.Constructor)]
         [HarmonyPostfix]
@@ -393,6 +501,7 @@ namespace FLERP
         {
             logger.LogWarning($"OnReroll {___rerollCost}");
             ___rerollCost -= rerollCostItem.Value;
+            //ItemWindow.instance.UpdateRerollText();
         }
 
         [HarmonyPatch(typeof(BuildGadgetMenu), "RemoveFromShop")]
@@ -486,9 +595,9 @@ namespace FLERP
             }
             modifier *= eHealthMult.Value;
         }
-        
 
-        [HarmonyPatch(typeof(HealthUnit), "ArmorMult",MethodType.Setter)]
+
+        [HarmonyPatch(typeof(HealthUnit), "ArmorMult", MethodType.Setter)]
         [HarmonyPrefix]
         public static void SetArmorMult(ref float __0)
         {
@@ -498,7 +607,7 @@ namespace FLERP
             }
             __0 *= eArmorMult.Value;
         }
-        
+
 
         [HarmonyPatch(typeof(Steerer), "MoveSpeedMult", MethodType.Setter)]
         [HarmonyPrefix]
@@ -510,7 +619,7 @@ namespace FLERP
             }
             __0 *= eSpeedMult.Value;
         }
-        
+
         [HarmonyPatch(typeof(AEnemy), "DamageMult", MethodType.Setter)]
         [HarmonyPrefix]
         public static void SetDamageMult(ref float __0)
