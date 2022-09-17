@@ -48,6 +48,8 @@ namespace FLERP
         public static ConfigEntry<int> rerollCostItem;
         public static ConfigEntry<int> addGainXP;
 
+        public static ConfigEntry<bool> addGoldNG;
+
         public static ConfigEntry<bool> survivedOn;
         public static ConfigEntry<int> survived;
 
@@ -108,6 +110,8 @@ namespace FLERP
                 buildGadgetMenu = typeof(BuildGadgetMenu);
 
                 Logger.LogMessage("Awake1");
+
+                addGoldNG = Config.Bind("Game", "addGoldNG", true);
 
                 survivedOn = Config.Bind("Game", "survivedOn", true);
                 survived = Config.Bind("Game", "survived", 0);
@@ -308,6 +312,7 @@ namespace FLERP
 
                 GUILayout.Label("=== Player ===");
 
+                if (GUILayout.Button($"gold add NG : {addGoldNG.Value}")) { addGoldNG.Value = !addGoldNG.Value; }
                 if (GUILayout.Button("gold add 100")) { MoneyManager.instance.AddMoney(100); }
 
                 GUILayout.Label("--- when Spawn ---");
@@ -555,7 +560,7 @@ namespace FLERP
         [HarmonyPostfix]
         public static void GadgetManagerCtor(ref Dictionary<GadgetSO, AGadget> ___upgradableGadgets)
         {
-            logger.LogWarning($"GadgetManager.ctor");
+            //logger.LogWarning($"GadgetManager.ctor");
             upgradableGadgets = ___upgradableGadgets;
         }
 
@@ -563,7 +568,7 @@ namespace FLERP
         [HarmonyPostfix]
         public static void OnReroll(ref int ___rerollCost)
         {
-            logger.LogWarning($"OnReroll {___rerollCost}");
+            //logger.LogWarning($"OnReroll {___rerollCost}");
             ___rerollCost -= rerollCostItem.Value;
             //ItemWindow.instance.UpdateRerollText();
         }
@@ -572,7 +577,7 @@ namespace FLERP
         [HarmonyPrefix]
         public static bool RemoveFromShop()
         {
-            logger.LogWarning($"RemoveFromShop");
+         //   logger.LogWarning($"RemoveFromShop");
             if (!removeFromShop.Value)
             {
                 BuildGadgetMenu.instance.UpdateShopUI();
@@ -584,7 +589,7 @@ namespace FLERP
         [HarmonyPrefix]
         public static bool RefreshShop(ShopTierSO ___shopTierSO, int ___shopTier, GadgetSO[] ___currShopGadgets, List<BuildGadgetItem> ___shopItems)
         {
-            logger.LogWarning($"RefreshShop");
+         //   logger.LogWarning($"RefreshShop");
             if (customShop.Value)
             {
                 ShopTier shopTier = ___shopTierSO.shopTiers[___shopTier];
@@ -650,13 +655,25 @@ namespace FLERP
         */
 
 
+        [HarmonyPatch(typeof(MoneyManager), "Awake")]
+        [HarmonyPostfix]
+        public static void Awake2()
+        {
+            if (addGoldNG.Value)
+            {
+                //logger.LogWarning($"MoneyManager Awake2 {MoneyManager.instance.MoneyAmount} , {OptionsManager.CurrNgLevel}");
+                MoneyManager.instance.AddMoney(OptionsManager.CurrNgLevel);
+            }
+        }
+        
+
         [HarmonyPatch(typeof(HealthManager), "SetMaxHealth")]
         [HarmonyPrefix]
         public static void SetMaxHealth(ref float maxHealth ,  bool ___isFriendly)
         {
             if (___isFriendly)
             {
-                logger.LogWarning($"SetMaxHealth {maxHealth}");
+                //logger.LogWarning($"SetMaxHealth {maxHealth}");
                 maxHealth *= mHealthMult.Value;
             }
         }
@@ -686,9 +703,10 @@ namespace FLERP
         /// <param name="modifier"></param>
         [HarmonyPatch(typeof(HealthManager), "SetMaxHealthModifier")]
         [HarmonyPrefix]
-        public static void SetMaxHealthModifier(ref float modifier)
+        public static void SetMaxHealthModifier(ref float modifier, HealthManager __instance)
         {
             modifier = SetMult(modifier, eHealthMult.Value);
+            //logger.LogWarning($"SetMaxHealthModifier {modifier} , {__instance.currHealth} , {__instance.MaxHealth}");
         }
 
         [HarmonyPatch(typeof(HealthUnit), "ArmorMult", MethodType.Setter)]
@@ -725,6 +743,7 @@ namespace FLERP
             return false;
         }
 
+        /*
 
         /// <summary>
         /// ___steerer != null 참일 경우 적
@@ -740,7 +759,6 @@ namespace FLERP
             logger.LogWarning($"TakeDamage {___steerer != null} , {damage} , {armorPen} , {__instance.TotalArmor}");
         }
 
-        /*
         /// <summary>
         /// ___isFriendly==false일 경우 적
         /// </summary>
