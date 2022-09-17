@@ -137,8 +137,7 @@ namespace FLERP
         {
             if (ShowCounter.Value.IsUp())// 단축키가 일치할때
             {
-                isGUIOn.Value = !isGUIOn.Value;// 보이거나 안보이게. 이런 배열이였네 지웠음
-                                               //MyLog.LogMessage("IsUp", ShowCounter.Value.MainKey);
+                isGUIOn.Value = !isGUIOn.Value;
             }
         }
 
