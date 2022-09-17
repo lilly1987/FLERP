@@ -22,6 +22,7 @@ namespace FLERP
 
         private ConfigEntry<bool> isGUIOn;
         private ConfigEntry<bool> isOpen;
+        private ConfigEntry<float> uiW;
 
         public int windowId = 542;
         public Rect WindowRect;
@@ -36,7 +37,14 @@ namespace FLERP
 
 
         static Type buildGadgetMenu;
-        public static int rerollCost = 1;
+        public static ConfigEntry<int> rerollCost;
+        //public static int rerollCost = 1;
+        public static ConfigEntry<int> baseGadgetCount;
+        public static ConfigEntry<int> rerollCostItem;
+        public static ConfigEntry<int> addGainXP;
+        public static ConfigEntry<float> pickupRadius;
+        public static ConfigEntry<bool> removeFromShop;
+        public static ConfigEntry<bool> customShop;
 
         public void Awake()
         {
@@ -48,17 +56,25 @@ namespace FLERP
             isGUIOn = Config.Bind("GUI", "isGUIOn", true);
             isOpen = Config.Bind("GUI", "isOpen", true);
             isOpen.SettingChanged += IsOpen_SettingChanged;
+            uiW = Config.Bind("GUI", "uiW", 300f);
 
             if (isOpen.Value)
-                WindowRect = new Rect(Screen.width - 65, 0, 200, 800);
+                WindowRect = new Rect(Screen.width - 65, 0, uiW.Value, 800);
             else
-                WindowRect = new Rect(Screen.width - 200, 0, 200, 800);
+                WindowRect = new Rect(Screen.width - uiW.Value, 0, uiW.Value, 800);
 
             IsOpen_SettingChanged(null, null);
 
             // BuildGadgetMenu.rerollCost : int @0400067A
             //buildGadgetMenu = AccessTools.TypeByName("BuildGadgetMenu");
-            buildGadgetMenu = typeof(BuildGadgetMenu);            
+            buildGadgetMenu = typeof(BuildGadgetMenu);
+            rerollCost = Config.Bind("Game", "rerollCost", 1);
+            rerollCostItem = Config.Bind("Game", "rerollCostItem", 4);
+            baseGadgetCount = Config.Bind("Game", "baseGadgetCount", 8);
+            addGainXP = Config.Bind("Game", "addGainXP", 9);
+            pickupRadius = Config.Bind("Game", "pickupRadius", 50f);
+            removeFromShop = Config.Bind("Game", "removeFromShop", false);
+            customShop = Config.Bind("Game", "customShop", true);
         }
 
         public void IsOpen_SettingChanged(object sender, EventArgs e)
@@ -67,16 +83,16 @@ namespace FLERP
             if (isOpen.Value)
             {
                 h = GUILayout.Height(800);
-                w = GUILayout.Width(300);
+                w = GUILayout.Width(uiW.Value);
                 windowName = FullName;
-                WindowRect.x -= 135;
+                WindowRect.x -= (uiW.Value - 64);
             }
             else
             {
                 h = GUILayout.Height(40);
                 w = GUILayout.Width(60);
                 windowName = ShortName;
-                WindowRect.x += 135;
+                WindowRect.x += (uiW.Value - 64);
             }
         }
 
@@ -128,13 +144,66 @@ namespace FLERP
             {
                 scrollPosition = GUILayout.BeginScrollView(scrollPosition, false, true);
 
-                GUILayout.BeginHorizontal();
-                GUILayout.Label($"Gadget rerollCost : {rerollCost}");
-                GUILayout.FlexibleSpace();
-                if (GUILayout.Button("<", GUILayout.Width(20), GUILayout.Height(20))) { AccessTools.Field(buildGadgetMenu, "rerollCost").SetValue(BuildGadgetMenu.instance, --rerollCost); }
-                if (GUILayout.Button(">", GUILayout.Width(20), GUILayout.Height(20))) { AccessTools.Field(buildGadgetMenu, "rerollCost").SetValue(BuildGadgetMenu.instance, ++rerollCost); }
-                GUILayout.EndHorizontal();
+                //
 
+                GUILayout.Label("=== Shop ===");
+
+                if (GUILayout.Button($"custom Shop : {customShop.Value}")) { customShop.Value = !customShop.Value; }
+                if (GUILayout.Button($"removeFromShop : {removeFromShop.Value}")) { removeFromShop.Value = !removeFromShop.Value; }
+
+                //
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"Gadget rerollCost : {rerollCost.Value}");
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("<", GUILayout.Width(20), GUILayout.Height(20))) { AccessTools.Field(buildGadgetMenu, "rerollCost").SetValue(BuildGadgetMenu.instance, --rerollCost.Value); }
+                if (GUILayout.Button(">", GUILayout.Width(20), GUILayout.Height(20))) { AccessTools.Field(buildGadgetMenu, "rerollCost").SetValue(BuildGadgetMenu.instance, ++rerollCost.Value); }
+                GUILayout.EndHorizontal();
+                //             
+                if (GadgetManager.instance != null)
+                {
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label($"MaxGadgetCount : {GadgetManager.instance.MaxGadgetCount}");
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("<", GUILayout.Width(20), GUILayout.Height(20))) { GadgetManager.instance.MaxGadgetCount--; }
+                    if (GUILayout.Button(">", GUILayout.Width(20), GUILayout.Height(20))) { GadgetManager.instance.MaxGadgetCount++; }
+                    GUILayout.EndHorizontal();
+                }
+                //
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"baseGadgetCount : {baseGadgetCount.Value}");
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("<", GUILayout.Width(20), GUILayout.Height(20))) { baseGadgetCount.Value--; }
+                if (GUILayout.Button(">", GUILayout.Width(20), GUILayout.Height(20))) { baseGadgetCount.Value++; }
+                GUILayout.EndHorizontal();
+                //
+
+                GUILayout.Label("=== Shop ===");
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"Item rerollCost -= : {rerollCostItem.Value}");
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("<", GUILayout.Width(20), GUILayout.Height(20))) { rerollCostItem.Value--; }
+                if (GUILayout.Button(">", GUILayout.Width(20), GUILayout.Height(20))) { rerollCostItem.Value++; }
+                GUILayout.EndHorizontal();
+                //
+
+                GUILayout.Label("=== XP ===");
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"pickupRadius : {pickupRadius.Value}");
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("<", GUILayout.Width(20), GUILayout.Height(20))) { pickupRadius.Value -= 5f; }
+                if (GUILayout.Button(">", GUILayout.Width(20), GUILayout.Height(20))) { pickupRadius.Value += 5f; }
+                GUILayout.EndHorizontal();
+                //
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"addGainXP : {addGainXP.Value}");
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("<", GUILayout.Width(20), GUILayout.Height(20))) { addGainXP.Value--; }
+                if (GUILayout.Button(">", GUILayout.Width(20), GUILayout.Height(20))) { addGainXP.Value++; }
+                GUILayout.EndHorizontal();
+                //
 
                 GUILayout.EndScrollView();
             }
@@ -142,7 +211,7 @@ namespace FLERP
             GUI.DragWindow(); // 창 드레그 가능하게 해줌. 마지막에만 넣어야함
         }
 
-        
+
 
         public void OnDisable()
         {
@@ -157,8 +226,109 @@ namespace FLERP
         {
             logger.LogWarning($"BuildGadgetMenu.ctor {___rerollCost}");
             //rerollCost = ___rerollCost;
-            ___rerollCost = rerollCost;
+            ___rerollCost = rerollCost.Value;
             //rerollCost=(int) AccessTools.Field(buildGadgetMenu, "rerollCost").GetValue(BuildGadgetMenu.instance);
         }
+
+        [HarmonyPatch(typeof(GadgetManager), "SetMaxGadgetCount")]
+        [HarmonyPrefix]
+        //public void SetMaxGadgetCount(int newGameLevel)
+        public static bool SetMaxGadgetCount(int newGameLevel)
+        {
+            logger.LogWarning($"SetMaxGadgetCount {newGameLevel}");
+            GadgetManager.instance.MaxGadgetCount = baseGadgetCount.Value + newGameLevel;
+            return false;
+        }
+
+        [HarmonyPatch(typeof(XPPicker), MethodType.Constructor)]
+        [HarmonyPostfix]
+        public static void XPPickerCtor(ref float ___pickupRadius)
+        {
+            //logger.LogWarning($"XPPicker.ctor {___pickupRadius}");
+            ___pickupRadius = pickupRadius.Value;
+        }
+
+        static Dictionary<GadgetSO, AGadget> upgradableGadgets;
+
+        [HarmonyPatch(typeof(GadgetManager), MethodType.Constructor)]
+        [HarmonyPostfix]
+        public static void GadgetManagerCtor(ref Dictionary<GadgetSO, AGadget> ___upgradableGadgets)
+        {
+            logger.LogWarning($"GadgetManager.ctor");
+            upgradableGadgets = ___upgradableGadgets;
+        }
+
+        [HarmonyPatch(typeof(ItemWindow), "OnReroll")]
+        [HarmonyPostfix]
+        public static void OnReroll(ref int ___rerollCost)
+        {
+            logger.LogWarning($"OnReroll {___rerollCost}");
+            ___rerollCost -= rerollCostItem.Value;
+        }
+
+        [HarmonyPatch(typeof(BuildGadgetMenu), "RemoveFromShop")]
+        [HarmonyPrefix]
+        public static bool RemoveFromShop()
+        {
+            logger.LogWarning($"RemoveFromShop");
+            if (!removeFromShop.Value)
+            {
+                BuildGadgetMenu.instance.UpdateShopUI();
+            }
+            return removeFromShop.Value;
+        }
+
+        [HarmonyPatch(typeof(BuildGadgetMenu), "RefreshShop")]
+        [HarmonyPrefix]
+        public static bool RefreshShop(ShopTierSO ___shopTierSO, int ___shopTier, GadgetSO[] ___currShopGadgets, List<BuildGadgetItem> ___shopItems)
+        {
+            logger.LogWarning($"RefreshShop");
+            if (customShop.Value)
+            {
+                ShopTier shopTier = ___shopTierSO.shopTiers[___shopTier];
+                //for (int i = 0; i < 5; i++)
+                //{
+                //    int tier = shopTier.RollProbability();
+                //    ___currShopGadgets[i] = GadgetData.instance.GetRandomGadget(tier);
+                //}
+                ___currShopGadgets[0] = GadgetData.instance.GetRandomGadget(0);
+                ___currShopGadgets[1] = GadgetData.instance.GetRandomGadget(1);
+                ___currShopGadgets[2] = GadgetData.instance.GetRandomGadget(2);
+                ___currShopGadgets[3] = GadgetData.instance.GetRandomGadget(3);
+                if (upgradableGadgets.Count > 0)
+                {
+                    ___currShopGadgets[4] = upgradableGadgets.ElementAt(UnityEngine.Random.Range(0, upgradableGadgets.Count)).Key;
+                }
+                else
+                {
+                    int tier = shopTier.RollProbability();
+                    ___currShopGadgets[4] = GadgetData.instance.GetRandomGadget(tier);
+                }
+                // GadgetManager.instance.GetGadget(this.currHover.CurrGadget);
+                foreach (BuildGadgetItem buildGadgetItem in ___shopItems)
+                {
+                    buildGadgetItem.ApplySpring();
+                }
+                BuildGadgetMenu.instance.UpdateShopUI();
+            }
+            return !customShop.Value;
+        }
+
+        [HarmonyPatch(typeof(XPManager), "GainXP")]
+        [HarmonyPrefix]
+        public static void GainXP(ref int ___currXP, int xpId)
+        {
+            //logger.LogWarning($"RemoveFromShop");
+            if (GameEnder.GameOver)
+            {
+                return;
+            }
+            if (xpId == 0)
+            {
+                ___currXP += addGainXP.Value;
+            }
+        }
+
+
     }
 }
