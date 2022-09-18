@@ -102,7 +102,7 @@ namespace FLERP
             Logger.LogMessage("Awake");
 
             ShowCounter = Config.Bind("GUI", "isGUIOnKey", new KeyboardShortcut(KeyCode.Keypad0));// 이건 단축키
-            ShowCounter = Config.Bind("GUI", "isGUIOnKey", new KeyboardShortcut(KeyCode.KeypadPeriod));// 이건 단축키
+            ShowCounter2 = Config.Bind("GUI", "isOpenKey", new KeyboardShortcut(KeyCode.KeypadPeriod));// 이건 단축키
             title = ShowCounter.ToString();
             isGUIOn = Config.Bind("GUI", "isGUIOn", true);
             isOpen = Config.Bind("GUI", "isOpen", true);
