@@ -50,6 +50,8 @@ namespace FLERP
 
         public static ConfigEntry<bool> addGoldNG;
 
+        public static ConfigEntry<bool> sortChg;
+
         public static ConfigEntry<bool> survivedOn;
         public static ConfigEntry<int> survived;
 
@@ -118,6 +120,8 @@ namespace FLERP
                 buildGadgetMenu = typeof(BuildGadgetMenu);
 
                 Logger.LogMessage("Awake1");
+
+                sortChg = Config.Bind("Game", "sortChg", true);
 
                 addGoldNG = Config.Bind("Game", "addGoldNG", true);
 
@@ -252,6 +256,11 @@ namespace FLERP
                 scrollPosition = GUILayout.BeginScrollView(scrollPosition, false, true);
 
                 //
+                GUILayout.Label("=== Play ===");
+
+                if (GUILayout.Button($"sort change : {sortChg.Value}")) { sortChg.Value = !sortChg.Value; }
+                if (GUILayout.Button($"gold add NG : {addGoldNG.Value}")) { addGoldNG.Value = !addGoldNG.Value; }
+                if (GUILayout.Button("gold add 100")) { MoneyManager.instance.AddMoney(100); }
 
                 GUILayout.Label("=== Time ===");
                 GUILayout.Label("need game restart");
@@ -325,10 +334,7 @@ namespace FLERP
                 GUILayout.EndHorizontal();
                 //
 
-                GUILayout.Label("=== Player ===");
-
-                if (GUILayout.Button($"gold add NG : {addGoldNG.Value}")) { addGoldNG.Value = !addGoldNG.Value; }
-                if (GUILayout.Button("gold add 100")) { MoneyManager.instance.AddMoney(100); }
+                GUILayout.Label("=== Gadget ===");
 
                 GUILayout.Label("--- when Spawn ---");
 
@@ -505,6 +511,9 @@ namespace FLERP
             harmony?.UnpatchSelf();
 
         }
+
+        #region Play
+
         /*
         static Clock clock;
 
@@ -562,6 +571,28 @@ namespace FLERP
             return GetCodeMatcher(instructions);
         }
 
+
+        [HarmonyPatch(typeof(MySortedList<GadgetSO, float>), "SortValueAt")]
+        [HarmonyPrefix]
+        private static bool SortValueAt(ref int __result, int index, List<ValueTuple<GadgetSO, float>> ___sortedList, Dictionary<GadgetSO, int> ___indexDict)
+        {
+            if (sortChg.Value)
+            {            
+                while (index != ___sortedList.Count - 1 && ___sortedList[index].Item2.CompareTo(___sortedList[index + 1].Item2) > 0)
+                {
+                    ValueTuple<GadgetSO, float> value = ___sortedList[index + 1];
+                    ___sortedList[index + 1] = ___sortedList[index];
+                    ___sortedList[index] = value;
+                    ___indexDict[___sortedList[index].Item1] = index;
+                    index++;
+                }
+                __result = index;
+            }
+            //logger.LogWarning($"SortValueAt {__result} , {___sortedList.Count} , {___indexDict.Count}");
+            return !sortChg.Value;
+        }
+
+        #endregion
 
         [HarmonyPatch(typeof(BuildGadgetMenu), MethodType.Constructor)]
         [HarmonyPostfix]
@@ -806,13 +837,13 @@ namespace FLERP
                 return ;
             }
             //logger.LogWarning($"SpawnEnemy {__result.Count}");
-            //Vector3 vector3;
+            Vector3 vector3;
             foreach (var item in __result)
             {
-                //vector3 = item.transform.localScale;
+                vector3 = item.transform.localScale;
                 //logger.LogWarning($"SpawnEnemy {vector3.x} {vector3.y}");
                 //vector3 = item.transform.localScale *= UnityEngine.Random.Range(1/eMultRnd.Value, eMultRnd.Value);
-                //logger.LogWarning($"SpawnEnemy {vector3.x} {vector3.y}");
+                logger.LogWarning($"SpawnEnemy {vector3.x} {vector3.y}");
                 item.transform.localScale *= UnityEngine.Random.Range(1/eMultRnd.Value, eMultRnd.Value);
             }
         }
