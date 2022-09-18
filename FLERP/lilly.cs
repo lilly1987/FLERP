@@ -78,7 +78,7 @@ namespace FLERP
 
         public const float speed = 1 / 8f;
 
-        public static CodeMatch matches = new CodeMatch(OpCodes.Ldc_I4, 1800);
+        public static CodeMatch matches = new CodeMatch(OpCodes.Ldc_I4, 1200);
         public static CodeInstruction instruction;
 
         public void Awake()
@@ -332,7 +332,7 @@ namespace FLERP
                 GUILayout.Label("--- when Spawn ---");
                 GUILayout.Label("HP=HealthMult * (1f + 0.8f * currNgBuffRatio)*eHealthMult*Rnd(1,eMultRnd)");
                 if (GUILayout.Button($"Mult apply : {eMultOn.Value}")) { eMultOn.Value = !eMultOn.Value; }
-                
+
                 if (GUILayout.Button($"Mult Rnd : {eMultRndOn.Value}")) { eMultRndOn.Value = !eMultRndOn.Value; }
 
                 GUILayout.BeginHorizontal();
@@ -465,64 +465,51 @@ namespace FLERP
             clock = __instance;
         }
         */
-
+        private static IEnumerable<CodeInstruction> GetCodeMatcher(IEnumerable<CodeInstruction> instructions)
+        {
+            try
+            {
+                var c = new CodeMatcher(instructions);
+                for (int i = 0; ; i++)
+                {                                
+                    c = c.MatchForward(false, matches);
+                    logger.LogMessage($"CodeMatcher , {i} , {c.Pos} , {c.Length}");
+                    if (c.Pos < c.Length)
+                    {
+                        c = c.SetInstruction(instruction);
+                    }
+                    else
+                    {
+                        if (i==0)
+                        {
+                            logger.LogError($"CodeMatcher not match");
+                        }
+                        return c.InstructionEnumeration();
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                logger.LogError($"CodeMatcher {e}");
+                return instructions;
+            }
+        }
 
         [HarmonyPatch(typeof(GameEnder), "InitiateLoseGame")]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> InitiateLoseGame(IEnumerable<CodeInstruction> instructions)
         {
-            try
-            {
-                CodeMatcher codeMatcher = new CodeMatcher(instructions)
-                    .MatchForward(false
-                        , matches
-                    );
-
-                if (codeMatcher.Pos == codeMatcher.Length)
-                {
-                    logger.LogError($"GameEnder.InitiateLoseGame not Match {codeMatcher.Pos} {codeMatcher.Length}");
-                    return instructions;
-                }
-                else
-                {
-                    logger.LogMessage($"GameEnder.InitiateLoseGame Match {codeMatcher.Pos} {codeMatcher.Length}");
-                }
-
-                return codeMatcher
-                    .SetInstruction(
-                        new CodeInstruction(
-                            OpCodes.Ldc_I4,
-                            survived.Value
-                            )
-                    )
-                    .InstructionEnumeration();
-            }
-            catch (Exception e)
-            {
-                logger.LogError($"GameEnder.InitiateLoseGame {e}");
-                return instructions;
-            }
+            logger.LogMessage($"GameEnder.InitiateLoseGame");
+            return GetCodeMatcher(instructions);
         }
 
 
         [HarmonyPatch(typeof(GameEnder), "LoseGameCR", MethodType.Enumerator)]
         [HarmonyTranspiler]
-
         public static IEnumerable<CodeInstruction> LoseGameCR(IEnumerable<CodeInstruction> instructions)
         {
-            try
-            {
-                return new CodeMatcher(instructions)
-                .MatchForward(false, matches).SetInstruction(instruction)
-                .MatchForward(false, matches).SetInstruction(instruction)
-                .MatchForward(false, matches).SetInstruction(instruction)
-                .InstructionEnumeration();
-            }
-            catch (Exception e)
-            {
-                logger.LogError($"GameEnder.LoseGameCR {e}");
-                return instructions;
-            }
+            logger.LogMessage($"GameEnder.LoseGameCR");
+            return GetCodeMatcher(instructions);
         }
 
 
@@ -577,7 +564,7 @@ namespace FLERP
         [HarmonyPrefix]
         public static bool RemoveFromShop()
         {
-         //   logger.LogWarning($"RemoveFromShop");
+            //   logger.LogWarning($"RemoveFromShop");
             if (!removeFromShop.Value)
             {
                 BuildGadgetMenu.instance.UpdateShopUI();
@@ -589,7 +576,7 @@ namespace FLERP
         [HarmonyPrefix]
         public static bool RefreshShop(ShopTierSO ___shopTierSO, int ___shopTier, GadgetSO[] ___currShopGadgets, List<BuildGadgetItem> ___shopItems)
         {
-         //   logger.LogWarning($"RefreshShop");
+            //   logger.LogWarning($"RefreshShop");
             if (customShop.Value)
             {
                 ShopTier shopTier = ___shopTierSO.shopTiers[___shopTier];
@@ -665,11 +652,11 @@ namespace FLERP
                 MoneyManager.instance.AddMoney(OptionsManager.CurrNgLevel);
             }
         }
-        
+
 
         [HarmonyPatch(typeof(HealthManager), "SetMaxHealth")]
         [HarmonyPrefix]
-        public static void SetMaxHealth(ref float maxHealth ,  bool ___isFriendly)
+        public static void SetMaxHealth(ref float maxHealth, bool ___isFriendly)
         {
             if (___isFriendly)
             {
@@ -736,10 +723,10 @@ namespace FLERP
         {
             if (!customRandomSpawnPosition.Value)
             {
-            return true;
+                return true;
             }
             var v = UnityEngine.Random.insideUnitCircle;
-            __result = v * 20+v.normalized*20;
+            __result = v * 20 + v.normalized * 20;
             return false;
         }
 
