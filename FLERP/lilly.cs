@@ -59,6 +59,7 @@ namespace FLERP
         public static ConfigEntry<bool> removeFromShop;
         public static ConfigEntry<bool> customShop;
 
+        public static ConfigEntry<bool> rndPos;
         public static ConfigEntry<bool> customRandomSpawnPosition;
         public static ConfigEntry<float> crspMin;
         public static ConfigEntry<float> crspMax;
@@ -73,17 +74,19 @@ namespace FLERP
         public static ConfigEntry<float> eDamageMult;
         public static ConfigEntry<float> eSpeedMult;
 
-        public static ConfigEntry<float> eHealthAdd;
-        public static ConfigEntry<float> eArmorAdd;
-        public static ConfigEntry<float> eDamageAdd;
-        public static ConfigEntry<float> eSpeedAdd;
+        //public static ConfigEntry<float> eHealthAdd;
+        //public static ConfigEntry<float> eArmorAdd;
+        //public static ConfigEntry<float> eDamageAdd;
+        //public static ConfigEntry<float> eSpeedAdd;
 
         public static ConfigEntry<float> eSizeMult;
         public static ConfigEntry<int> eQuantityMult;
 
         public static ConfigEntry<float> mHealthMult;
 
-        public const float speed = 1 / 8f;
+        public static ConfigEntry<float> interval1;
+        public static ConfigEntry<float> interval2;
+        //public const float speed = 1 / 8f;
 
         public static CodeMatch matches = new CodeMatch(OpCodes.Ldc_I4, 1200);
         public static CodeInstruction instruction;
@@ -131,43 +134,48 @@ namespace FLERP
                 rerollCost = Config.Bind("Game", "rerollCost", 1);
                 rerollCostItem = Config.Bind("Game", "rerollCostItem", 4);
                 baseGadgetCount = Config.Bind("Game", "baseGadgetCount", 8);
-                removeFromShop = Config.Bind("Game", "removeFromShop", false);
+                removeFromShop = Config.Bind("Game", "removeFromShop", true);
 
                 customShop = Config.Bind("Game", "customShop", true);
 
                 Logger.LogMessage("Awake2");
 
                 pickupRadius = Config.Bind("Game", "pickupRadius", 50f);
-                addGainXP = Config.Bind("Game", "addGainXP", 9);
+                addGainXP = Config.Bind("Game", "addGainXP", 1);
 
                 Logger.LogMessage("Awake3");
 
                 customRandomSpawnPosition = Config.Bind("Game", "customRandomSpawnPosition", true);
-                crspMin = Config.Bind("Game", "crspMin", 10f);
-                crspMax = Config.Bind("Game", "crspMax", 30f);
+                rndPos = Config.Bind("Game", "rndPos", true);
+
+                crspMin = Config.Bind("Game", "crspMin", 35f);
+                crspMax = Config.Bind("Game", "crspMax", 45f);
 
                 eMultOn = Config.Bind("Game", "eMultOn", true);
                 eMultRndOn = Config.Bind("Game", "eMultRndOn", true);
                 //eMult = Config.Bind("Game", "eMult", 2f);
 
-                eMultRnd = Config.Bind("Game", "eMultRnd", 2f);
+                eMultRnd = Config.Bind("Game", "eMultRnd", 1.25f);
 
                 Logger.LogMessage("Awake4");
 
-                eHealthMult = Config.Bind("Game", "eHealthMult", 2f);
-                eArmorMult = Config.Bind("Game", "eArmorMult", 2f);
-                eDamageMult = Config.Bind("Game", "eDamageMult", 2f);
-                eSpeedMult = Config.Bind("Game", "eSpeedMult", 2f);
+                eHealthMult = Config.Bind("Game", "eHealthMult", 1f);
+                eArmorMult = Config.Bind("Game", "eArmorMult", 1f);
+                eDamageMult = Config.Bind("Game", "eDamageMult", 1f);
+                eSpeedMult = Config.Bind("Game", "eSpeedMult", 1f);
 
                 eSizeMult = Config.Bind("Game", "eSizeMult", 1f);
                 eQuantityMult = Config.Bind("Game", "eQuantityMult", 2);
 
+                interval1 = Config.Bind("Game", "interval", 1f/8f);
+                interval2 = Config.Bind("Game", "interval", 1f);
+
                 Logger.LogMessage("Awake5");
 
-                eHealthAdd = Config.Bind("Game", "eHealthAdd", 1f);
-                eArmorAdd = Config.Bind("Game", "eArmorAdd", 1f);
-                eDamageAdd = Config.Bind("Game", "eDamageAdd", 1f);
-                eSpeedAdd = Config.Bind("Game", "eSpeedAdd", 1f);
+                //eHealthAdd = Config.Bind("Game", "eHealthAdd", 1f);
+                //eArmorAdd = Config.Bind("Game", "eArmorAdd", 1f);
+                //eDamageAdd = Config.Bind("Game", "eDamageAdd", 1f);
+                //eSpeedAdd = Config.Bind("Game", "eSpeedAdd", 1f);
 
 
                 mHealthMult = Config.Bind("Game", "mHealthMult", 1f);
@@ -342,15 +350,16 @@ namespace FLERP
                 GUILayout.Label($"mHealthMult : {mHealthMult.Value}");
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { mHealthMult.Value = 1f; }
-                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { mHealthMult.Value -= speed; }
-                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { mHealthMult.Value += speed; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { mHealthMult.Value -= interval1.Value; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { mHealthMult.Value += interval1.Value; }
                 GUILayout.EndHorizontal();
 
                 GUILayout.Label("=== Enemy ===");
 
-                GUILayout.Label("--- customRandomSpawnPosition ---");
+                GUILayout.Label("--- custom Position ---");
 
-                if (GUILayout.Button($"customRandomSpawnPosition : {customRandomSpawnPosition.Value}")) { customRandomSpawnPosition.Value = !customRandomSpawnPosition.Value; }
+                if (GUILayout.Button($"random positon : {rndPos.Value}")) { rndPos.Value = !rndPos.Value; }                
+                if (GUILayout.Button($"random pool Position : {customRandomSpawnPosition.Value}")) { customRandomSpawnPosition.Value = !customRandomSpawnPosition.Value; }
 
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"min : {crspMin.Value}");
@@ -379,56 +388,56 @@ namespace FLERP
                 GUILayout.Label($"eMultRnd : {eMultRnd.Value}");
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eMultRnd.Value = 1f; }
-                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eMultRnd.Value -= speed; }
-                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eMultRnd.Value += speed; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eMultRnd.Value -= interval1.Value; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eMultRnd.Value += interval1.Value; }
                 GUILayout.EndHorizontal();
 
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"eHealthMult : {eHealthMult.Value}");
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eHealthMult.Value = 1f; }
-                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eHealthMult.Value -= speed; }
-                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eHealthMult.Value += speed; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eHealthMult.Value -= interval1.Value; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eHealthMult.Value += interval1.Value; }
                 GUILayout.EndHorizontal();
 
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"eArmorMult : {eArmorMult.Value}");
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eArmorMult.Value = 1f; }
-                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eArmorMult.Value -= speed; }
-                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eArmorMult.Value += speed; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eArmorMult.Value -= interval1.Value; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eArmorMult.Value += interval1.Value; }
                 GUILayout.EndHorizontal();
 
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"eDamageMult : {eDamageMult.Value}");
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eDamageMult.Value = 1f; }
-                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eDamageMult.Value -= speed; }
-                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eDamageMult.Value += speed; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eDamageMult.Value -= interval1.Value; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eDamageMult.Value += interval1.Value; }
                 GUILayout.EndHorizontal();
 
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"eSpeedMult : {eSpeedMult.Value}");
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eSpeedMult.Value = 1f; }
-                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eSpeedMult.Value -= speed; }
-                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eSpeedMult.Value += speed; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eSpeedMult.Value -= interval1.Value; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eSpeedMult.Value += interval1.Value; }
                 GUILayout.EndHorizontal();
-                
+
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"eSizeMult : {eSizeMult.Value}");
                 GUILayout.FlexibleSpace();
-                if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eSizeMult.Value = 1f; }
-                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eSizeMult.Value -= speed; }
-                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eSizeMult.Value += speed; }
+                if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eSizeMult.Value = 1.5f; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eSizeMult.Value -= interval1.Value; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eSizeMult.Value += interval1.Value; }
                 GUILayout.EndHorizontal();
-                                
+
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"eQuantityMult : {eQuantityMult.Value}");
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eQuantityMult.Value = 1; }
-                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eQuantityMult.Value --; }
-                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eQuantityMult.Value ++; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eQuantityMult.Value--; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eQuantityMult.Value++; }
                 GUILayout.EndHorizontal();
 
                 GUILayout.Label("--- edit property ---");
@@ -466,29 +475,29 @@ namespace FLERP
                     GUILayout.BeginHorizontal();
                     GUILayout.Label($"HealthMult : {EnemySpawner.instance.HealthMult}");
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult -= eHealthAdd.Value; }
-                    if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult += eHealthAdd.Value; }
+                    if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult -= interval2.Value; }
+                    if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult += interval2.Value; }
                     GUILayout.EndHorizontal();
 
                     GUILayout.BeginHorizontal();
                     GUILayout.Label($"ArmorMult : {EnemySpawner.instance.ArmorMult}");
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult -= eArmorAdd.Value; }
-                    if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult += eArmorAdd.Value; }
+                    if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult -= interval2.Value; }
+                    if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult += interval2.Value; }
                     GUILayout.EndHorizontal();
 
                     GUILayout.BeginHorizontal();
                     GUILayout.Label($"DamageMult : {EnemySpawner.instance.DamageMult}");
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult -= eDamageAdd.Value; }
-                    if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult += eDamageAdd.Value; }
+                    if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult -= interval2.Value; }
+                    if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult += interval2.Value; }
                     GUILayout.EndHorizontal();
 
                     GUILayout.BeginHorizontal();
                     GUILayout.Label($"SpeedMult : {EnemySpawner.instance.SpeedMult}");
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult -= eSpeedAdd.Value; }
-                    if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult += eSpeedAdd.Value; }
+                    if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult -= interval2.Value; }
+                    if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { EnemySpawner.instance.HealthMult += interval2.Value; }
                     GUILayout.EndHorizontal();
 
                 }
@@ -577,7 +586,7 @@ namespace FLERP
         private static bool SortValueAt(ref int __result, int index, List<ValueTuple<GadgetSO, float>> ___sortedList, Dictionary<GadgetSO, int> ___indexDict)
         {
             if (sortChg.Value)
-            {            
+            {
                 while (index != ___sortedList.Count - 1 && ___sortedList[index].Item2.CompareTo(___sortedList[index + 1].Item2) > 0)
                 {
                     ValueTuple<GadgetSO, float> value = ___sortedList[index + 1];
@@ -623,7 +632,7 @@ namespace FLERP
             //logger.LogWarning($"XPPicker.ctor {___pickupRadius}");
             xPPicker = __instance;
             ___pickupRadius = pickupRadius.Value;
-            
+
         }
 
         public static Dictionary<GadgetSO, AGadget> upgradableGadgets;
@@ -827,28 +836,63 @@ namespace FLERP
             __result = v * (crspMax.Value - crspMin.Value) + v.normalized * crspMin.Value;
             return false;
         }
-        
+
+        // static int cnt;
+        /// <summary>
+        /// 소환 크기
+        /// </summary>
+        /// <param name="__result"></param>
+        /// <param name="pair"></param>
         [HarmonyPatch(typeof(EnemySpawner), "SpawnEnemy")]
         [HarmonyPostfix]
-        public static void SpawnEnemy(List<GameObject>  __result)
+        public static void SpawnEnemy(List<GameObject> __result, ref ValueTuple<GameObject, int> pair)
         {
-            if (!eMultRndOn.Value||!eMultOn.Value)
+            if (rndPos.Value)
             {
-                return ;
+                Vector2 v;
+                foreach (var item in __result)
+                {
+                    v = item.transform.position;
+                    GetRandomSpawnPosition(ref v);
+                    item.transform.position = v;
+                }
+            }
+
+            if (!eMultOn.Value)
+            {
+                return;
             }
             //logger.LogWarning($"SpawnEnemy {__result.Count}");
-            Vector3 vector3;
-            foreach (var item in __result)
+            Vector3 vector3= pair.Item1.transform.localScale;
+            //AEnemy a;
+            if (eMultRndOn.Value)
             {
-                vector3 = item.transform.localScale;
-                //logger.LogWarning($"SpawnEnemy {vector3.x} {vector3.y}");
-                //vector3 = item.transform.localScale *= UnityEngine.Random.Range(1/eMultRnd.Value, eMultRnd.Value);
-                logger.LogWarning($"SpawnEnemy {vector3.x} {vector3.y}");
-                item.transform.localScale *= UnityEngine.Random.Range(1/eMultRnd.Value, eMultRnd.Value);
+                foreach (var item in __result)
+                {
+                    //a = item.GetComponent<AEnemy>();
+                    //vector3 = a.PoolKey.transform.localScale;
+                    //logger.LogWarning($"SpawnEnemy , {vector3.x} , {vector3.y} , {a.PoolKey.name} , {++cnt} ");
+                    //vector3 = item.transform.localScale = vector3 * UnityEngine.Random.Range(1 / eMultRnd.Value, eMultRnd.Value);
+                    //logger.LogWarning($"SpawnEnemy , {vector3.x} , {vector3.y} , {item.name}");
+                    item.transform.localScale = vector3 * eSizeMult.Value * UnityEngine.Random.Range(1 / eSizeMult.Value, eSizeMult.Value);
+                }
             }
+            else
+            {
+                foreach (var item in __result)
+                {
+                    item.transform.localScale = vector3 * eSizeMult.Value;
+                }
+            }
+
         }
 
-        
+        /// <summary>
+        /// 소환 갯수 수정
+        /// </summary>
+        /// <param name="pair"></param>
+        /// <param name="position"></param>
+        /// <param name="rotation"></param>
         [HarmonyPatch(typeof(EnemyPooler), "Create")]
         [HarmonyPrefix]
         public static void Create(ref ValueTuple<GameObject, int> pair, Vector2 position, Quaternion rotation)
@@ -857,7 +901,7 @@ namespace FLERP
             {
                 return;
             }
-            logger.LogWarning($"Create {pair.Item1.name} , {pair.Item2} , {position} , {rotation}");
+            //logger.LogWarning($"Create {pair.Item1.name} , {pair.Item2} , {position} , {rotation}");
             pair.Item2 *= eQuantityMult.Value;
         }
 
