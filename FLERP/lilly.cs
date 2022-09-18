@@ -22,6 +22,7 @@ namespace FLERP
         public static Harmony harmony;
 
         public ConfigEntry<BepInEx.Configuration.KeyboardShortcut> ShowCounter;
+        public ConfigEntry<BepInEx.Configuration.KeyboardShortcut> ShowCounter2;
 
         public ConfigEntry<bool> isGUIOn;
         public ConfigEntry<bool> isOpen;
@@ -31,6 +32,7 @@ namespace FLERP
         public int windowId = 542;
         public Rect windowRect;
 
+        public string title = "";
         public string windowName = "";
         public string FullName = "Plugin";
         public string ShortName = "P";
@@ -100,7 +102,8 @@ namespace FLERP
             Logger.LogMessage("Awake");
 
             ShowCounter = Config.Bind("GUI", "isGUIOnKey", new KeyboardShortcut(KeyCode.Keypad0));// 이건 단축키
-
+            ShowCounter = Config.Bind("GUI", "isGUIOnKey", new KeyboardShortcut(KeyCode.KeypadPeriod));// 이건 단축키
+            title = ShowCounter.ToString();
             isGUIOn = Config.Bind("GUI", "isGUIOn", true);
             isOpen = Config.Bind("GUI", "isOpen", true);
             isOpen.SettingChanged += IsOpen_SettingChanged;
@@ -227,6 +230,10 @@ namespace FLERP
             {
                 isGUIOn.Value = !isGUIOn.Value;
             }
+            if (ShowCounter2.Value.IsUp())// 단축키가 일치할때
+            {
+                isOpen.Value = !isOpen.Value;
+            }
         }
 
 
@@ -248,6 +255,7 @@ namespace FLERP
                                         // 라벨 추가
                                         //GUILayout.Label(windowName, GUILayout.Height(20));
                                         // 안쓰는 공간이 생기더라도 다른 기능으로 꽉 채우지 않고 빈공간 만들기
+            GUILayout.Label(title);
             GUILayout.FlexibleSpace();
 
             if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { isOpen.Value = !isOpen.Value; }
