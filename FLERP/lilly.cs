@@ -83,6 +83,9 @@ namespace FLERP
         public static CodeMatch matches = new CodeMatch(OpCodes.Ldc_I4, 1200);
         public static CodeInstruction instruction;
 
+        static XPPicker xPPicker;
+        static System.Reflection.FieldInfo pickupRadius_;
+
         public void Awake()
         {
             logger = Logger;
@@ -164,6 +167,7 @@ namespace FLERP
                                                 OpCodes.Ldc_I4,
                                                 survived.Value
                                                 );
+                pickupRadius_ = AccessTools.Field(typeof(XPPicker), "pickupRadius");
             }
             catch (Exception e)
             {
@@ -301,8 +305,8 @@ namespace FLERP
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"pickupRadius : {pickupRadius.Value}");
                 GUILayout.FlexibleSpace();
-                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { pickupRadius.Value -= 5; }
-                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { pickupRadius.Value += 5; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { pickupRadius_.SetValue(xPPicker, pickupRadius.Value -= 5); }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { pickupRadius_.SetValue(xPPicker, pickupRadius.Value += 5); }
                 GUILayout.EndHorizontal();
                 //
 
@@ -330,7 +334,7 @@ namespace FLERP
                 GUILayout.EndHorizontal();
 
                 GUILayout.Label("=== Enemy ===");
-                
+
                 GUILayout.Label("--- customRandomSpawnPosition ---");
 
                 if (GUILayout.Button($"customRandomSpawnPosition : {customRandomSpawnPosition.Value}")) { customRandomSpawnPosition.Value = !customRandomSpawnPosition.Value; }
@@ -353,7 +357,7 @@ namespace FLERP
 
 
                 GUILayout.Label("--- when Spawn ---");
-                GUILayout.Label("HP=HealthMult * (1f + 0.8f * currNgBuffRatio)*eHealthMult*Rnd(1,eMultRnd)");
+                GUILayout.Label("ex) HP=HealthMult * (1f + 0.8f * currNgBuffRatio)*eHealthMult*Rnd(1,eMultRnd)");
                 if (GUILayout.Button($"Mult apply : {eMultOn.Value}")) { eMultOn.Value = !eMultOn.Value; }
 
                 if (GUILayout.Button($"Mult Rnd : {eMultRndOn.Value}")) { eMultRndOn.Value = !eMultRndOn.Value; }
@@ -399,7 +403,7 @@ namespace FLERP
                 GUILayout.EndHorizontal();
 
                 GUILayout.Label("--- edit property ---");
-                GUILayout.Label("HealthMult reset when game start");
+                GUILayout.Label("reset when game start");
                 GUILayout.Label("HealthMult-=eHealthAdd");
                 //GUILayout.Label("HealthMult+=eHealthAdd");
                 //GUILayout.BeginHorizontal();
@@ -494,7 +498,7 @@ namespace FLERP
             {
                 var c = new CodeMatcher(instructions);
                 for (int i = 0; ; i++)
-                {                                
+                {
                     c = c.MatchForward(false, matches);
                     logger.LogMessage($"CodeMatcher , {i} , {c.Pos} , {c.Length}");
                     if (c.Pos < c.Length)
@@ -503,7 +507,7 @@ namespace FLERP
                     }
                     else
                     {
-                        if (i==0)
+                        if (i == 0)
                         {
                             logger.LogError($"CodeMatcher not match");
                         }
@@ -556,12 +560,16 @@ namespace FLERP
             return false;
         }
 
+
+
         [HarmonyPatch(typeof(XPPicker), MethodType.Constructor)]
         [HarmonyPostfix]
-        public static void XPPickerCtor(ref float ___pickupRadius)
+        public static void XPPickerCtor(XPPicker __instance, ref float ___pickupRadius)
         {
             //logger.LogWarning($"XPPicker.ctor {___pickupRadius}");
+            xPPicker = __instance;
             ___pickupRadius = pickupRadius.Value;
+            
         }
 
         public static Dictionary<GadgetSO, AGadget> upgradableGadgets;
@@ -610,7 +618,7 @@ namespace FLERP
                 //    int tier = shopTier.RollProbability();
                 //    ___currShopGadgets[i] = GadgetData.instance.GetRandomGadget(tier);
                 //}
-                if (GadgetManager.instance.CurrGadgetCount< GadgetManager.instance.MaxGadgetCount)
+                if (GadgetManager.instance.CurrGadgetCount < GadgetManager.instance.MaxGadgetCount)
                 {
                     ___currShopGadgets[0] = GadgetData.instance.GetRandomGadget(0);
                     ___currShopGadgets[1] = GadgetData.instance.GetRandomGadget(1);
@@ -642,7 +650,7 @@ namespace FLERP
             return !customShop.Value;
         }
 
-#endregion
+        #endregion
 
         [HarmonyPatch(typeof(XPManager), "GainXP")]
         [HarmonyPrefix]
@@ -762,7 +770,7 @@ namespace FLERP
                 return true;
             }
             var v = UnityEngine.Random.insideUnitCircle;
-            __result = v * (crspMax.Value- crspMin.Value) + v.normalized * crspMin.Value;
+            __result = v * (crspMax.Value - crspMin.Value) + v.normalized * crspMin.Value;
             return false;
         }
 
