@@ -58,6 +58,8 @@ namespace FLERP
         public static ConfigEntry<bool> customShop;
 
         public static ConfigEntry<bool> customRandomSpawnPosition;
+        public static ConfigEntry<float> crspMin;
+        public static ConfigEntry<float> crspMax;
 
         public static ConfigEntry<bool> eMultOn;
         public static ConfigEntry<bool> eMultRndOn;
@@ -131,6 +133,8 @@ namespace FLERP
                 Logger.LogMessage("Awake3");
 
                 customRandomSpawnPosition = Config.Bind("Game", "customRandomSpawnPosition", true);
+                crspMin = Config.Bind("Game", "crspMin", 10f);
+                crspMax = Config.Bind("Game", "crspMax", 30f);
 
                 eMultOn = Config.Bind("Game", "eMultOn", true);
                 eMultRndOn = Config.Bind("Game", "eMultRndOn", true);
@@ -326,8 +330,27 @@ namespace FLERP
                 GUILayout.EndHorizontal();
 
                 GUILayout.Label("=== Enemy ===");
+                
+                GUILayout.Label("--- customRandomSpawnPosition ---");
 
                 if (GUILayout.Button($"customRandomSpawnPosition : {customRandomSpawnPosition.Value}")) { customRandomSpawnPosition.Value = !customRandomSpawnPosition.Value; }
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"min : {crspMin.Value}");
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("R", GUILayout.Width(20), GUILayout.Height(20))) { crspMin.Value = (float)crspMin.DefaultValue; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { crspMin.Value -= 5f; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { crspMin.Value += 5f; }
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"max : {crspMax.Value}");
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("R", GUILayout.Width(20), GUILayout.Height(20))) { crspMax.Value = (float)crspMax.DefaultValue; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { crspMax.Value -= 5f; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { crspMax.Value += 5f; }
+                GUILayout.EndHorizontal();
+
 
                 GUILayout.Label("--- when Spawn ---");
                 GUILayout.Label("HP=HealthMult * (1f + 0.8f * currNgBuffRatio)*eHealthMult*Rnd(1,eMultRnd)");
@@ -726,7 +749,7 @@ namespace FLERP
                 return true;
             }
             var v = UnityEngine.Random.insideUnitCircle;
-            __result = v * 20 + v.normalized * 20;
+            __result = v * (crspMax.Value- crspMin.Value) + v.normalized * crspMin.Value;
             return false;
         }
 
