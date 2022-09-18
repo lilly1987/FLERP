@@ -318,7 +318,7 @@ namespace FLERP
                 GUILayout.Label("--- when Spawn ---");
 
                 GUILayout.BeginHorizontal();
-                GUILayout.Label($"eHealthMult : {mHealthMult.Value}");
+                GUILayout.Label($"mHealthMult : {mHealthMult.Value}");
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { mHealthMult.Value = 1f; }
                 if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { mHealthMult.Value -= speed; }
