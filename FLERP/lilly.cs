@@ -77,6 +77,7 @@ namespace FLERP
         public static ConfigEntry<float> eSpeedAdd;
 
         public static ConfigEntry<float> eSizeMult;
+        public static ConfigEntry<int> eQuantityMult;
 
         public static ConfigEntry<float> mHealthMult;
 
@@ -155,6 +156,7 @@ namespace FLERP
                 eSpeedMult = Config.Bind("Game", "eSpeedMult", 2f);
 
                 eSizeMult = Config.Bind("Game", "eSizeMult", 1f);
+                eQuantityMult = Config.Bind("Game", "eQuantityMult", 2);
 
                 Logger.LogMessage("Awake5");
 
@@ -413,6 +415,14 @@ namespace FLERP
                 if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eSizeMult.Value = 1f; }
                 if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eSizeMult.Value -= speed; }
                 if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eSizeMult.Value += speed; }
+                GUILayout.EndHorizontal();
+                                
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"eQuantityMult : {eQuantityMult.Value}");
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eQuantityMult.Value = 1; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eQuantityMult.Value --; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eQuantityMult.Value ++; }
                 GUILayout.EndHorizontal();
 
                 GUILayout.Label("--- edit property ---");
@@ -791,7 +801,7 @@ namespace FLERP
         [HarmonyPostfix]
         public static void SpawnEnemy(List<GameObject>  __result)
         {
-            if (!eMultRndOn.Value)
+            if (!eMultRndOn.Value||!eMultOn.Value)
             {
                 return ;
             }
@@ -806,6 +816,21 @@ namespace FLERP
                 item.transform.localScale *= UnityEngine.Random.Range(1/eMultRnd.Value, eMultRnd.Value);
             }
         }
+
+        
+        [HarmonyPatch(typeof(EnemyPooler), "Create")]
+        [HarmonyPrefix]
+        public static void Create(ref ValueTuple<GameObject, int> pair, Vector2 position, Quaternion rotation)
+        {
+            if (!eMultOn.Value)
+            {
+                return;
+            }
+            logger.LogWarning($"Create {pair.Item1.name} , {pair.Item2} , {position} , {rotation}");
+            pair.Item2 *= eQuantityMult.Value;
+        }
+
+
 
         /*
 
