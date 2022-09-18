@@ -76,6 +76,8 @@ namespace FLERP
         public static ConfigEntry<float> eDamageAdd;
         public static ConfigEntry<float> eSpeedAdd;
 
+        public static ConfigEntry<float> eSizeMult;
+
         public static ConfigEntry<float> mHealthMult;
 
         public const float speed = 1 / 8f;
@@ -152,12 +154,15 @@ namespace FLERP
                 eDamageMult = Config.Bind("Game", "eDamageMult", 2f);
                 eSpeedMult = Config.Bind("Game", "eSpeedMult", 2f);
 
+                eSizeMult = Config.Bind("Game", "eSizeMult", 1f);
+
                 Logger.LogMessage("Awake5");
 
                 eHealthAdd = Config.Bind("Game", "eHealthAdd", 1f);
                 eArmorAdd = Config.Bind("Game", "eArmorAdd", 1f);
                 eDamageAdd = Config.Bind("Game", "eDamageAdd", 1f);
                 eSpeedAdd = Config.Bind("Game", "eSpeedAdd", 1f);
+
 
                 mHealthMult = Config.Bind("Game", "mHealthMult", 1f);
 
@@ -178,7 +183,7 @@ namespace FLERP
 
         public void IsOpen_SettingChanged(object sender, EventArgs e)
         {
-            logger.LogInfo($"IsOpen_SettingChanged {isOpen.Value} , {isGUIOn.Value},{windowRect.x} ");
+            //logger.LogInfo($"IsOpen_SettingChanged {isOpen.Value} , {isGUIOn.Value},{windowRect.x} ");
             if (isOpen.Value)
             {
                 h = GUILayout.Height(uiH.Value);
@@ -401,6 +406,14 @@ namespace FLERP
                 if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eSpeedMult.Value -= speed; }
                 if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eSpeedMult.Value += speed; }
                 GUILayout.EndHorizontal();
+                
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"eSizeMult : {eSizeMult.Value}");
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eSizeMult.Value = 1f; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eSizeMult.Value -= speed; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eSizeMult.Value += speed; }
+                GUILayout.EndHorizontal();
 
                 GUILayout.Label("--- edit property ---");
                 GUILayout.Label("reset when game start");
@@ -544,7 +557,7 @@ namespace FLERP
         [HarmonyPostfix]
         public static void BuildGadgetMenuCtor(ref int ___rerollCost)
         {
-            logger.LogWarning($"BuildGadgetMenu.ctor {___rerollCost}");
+            //logger.LogWarning($"BuildGadgetMenu.ctor {___rerollCost}");
             //rerollCost = ___rerollCost;
             ___rerollCost = rerollCost.Value;
             //rerollCost=(int) AccessTools.Field(buildGadgetMenu, "rerollCost").GetValue(BuildGadgetMenu.instance);
@@ -555,7 +568,7 @@ namespace FLERP
         //public void SetMaxGadgetCount(int newGameLevel)
         public static bool SetMaxGadgetCount(int newGameLevel)
         {
-            logger.LogWarning($"SetMaxGadgetCount {newGameLevel}");
+            //logger.LogWarning($"SetMaxGadgetCount {newGameLevel}");
             GadgetManager.instance.MaxGadgetCount = baseGadgetCount.Value + newGameLevel;
             return false;
         }
@@ -772,6 +785,26 @@ namespace FLERP
             var v = UnityEngine.Random.insideUnitCircle;
             __result = v * (crspMax.Value - crspMin.Value) + v.normalized * crspMin.Value;
             return false;
+        }
+        
+        [HarmonyPatch(typeof(EnemySpawner), "SpawnEnemy")]
+        [HarmonyPostfix]
+        public static void SpawnEnemy(List<GameObject>  __result)
+        {
+            if (!eMultRndOn.Value)
+            {
+                return ;
+            }
+            //logger.LogWarning($"SpawnEnemy {__result.Count}");
+            //Vector3 vector3;
+            foreach (var item in __result)
+            {
+                //vector3 = item.transform.localScale;
+                //logger.LogWarning($"SpawnEnemy {vector3.x} {vector3.y}");
+                //vector3 = item.transform.localScale *= UnityEngine.Random.Range(1/eMultRnd.Value, eMultRnd.Value);
+                //logger.LogWarning($"SpawnEnemy {vector3.x} {vector3.y}");
+                item.transform.localScale *= UnityEngine.Random.Range(1/eMultRnd.Value, eMultRnd.Value);
+            }
         }
 
         /*
