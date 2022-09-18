@@ -103,7 +103,7 @@ namespace FLERP
 
             ShowCounter = Config.Bind("GUI", "isGUIOnKey", new KeyboardShortcut(KeyCode.Keypad0));// 이건 단축키
             ShowCounter2 = Config.Bind("GUI", "isOpenKey", new KeyboardShortcut(KeyCode.KeypadPeriod));// 이건 단축키
-            title = ShowCounter.ToString();
+
             isGUIOn = Config.Bind("GUI", "isGUIOn", true);
             isOpen = Config.Bind("GUI", "isOpen", true);
             isOpen.SettingChanged += IsOpen_SettingChanged;
@@ -170,7 +170,7 @@ namespace FLERP
                 eSizeMult = Config.Bind("Game", "eSizeMult", 1f);
                 eQuantityMult = Config.Bind("Game", "eQuantityMult", 1);
 
-                interval1 = Config.Bind("Game", "interval", 1f/8f);
+                interval1 = Config.Bind("Game", "interval", 1f / 8f);
                 interval2 = Config.Bind("Game", "interval", 1f);
 
                 Logger.LogMessage("Awake5");
@@ -203,6 +203,7 @@ namespace FLERP
             //logger.LogInfo($"IsOpen_SettingChanged {isOpen.Value} , {isGUIOn.Value},{windowRect.x} ");
             if (isOpen.Value)
             {
+                title = ShowCounter.Value.ToString();
                 h = GUILayout.Height(uiH.Value);
                 w = GUILayout.Width(uiW.Value);
                 windowName = FullName;
@@ -210,6 +211,7 @@ namespace FLERP
             }
             else
             {
+                title = "";
                 h = GUILayout.Height(40);
                 w = GUILayout.Width(60);
                 windowName = ShortName;
@@ -255,7 +257,7 @@ namespace FLERP
                                         // 라벨 추가
                                         //GUILayout.Label(windowName, GUILayout.Height(20));
                                         // 안쓰는 공간이 생기더라도 다른 기능으로 꽉 채우지 않고 빈공간 만들기
-            GUILayout.Label(title);
+            if (isOpen.Value) GUILayout.Label(title);
             GUILayout.FlexibleSpace();
 
             if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { isOpen.Value = !isOpen.Value; }
@@ -366,7 +368,7 @@ namespace FLERP
 
                 GUILayout.Label("--- custom Position ---");
 
-                if (GUILayout.Button($"random positon : {rndPos.Value}")) { rndPos.Value = !rndPos.Value; }                
+                if (GUILayout.Button($"random positon : {rndPos.Value}")) { rndPos.Value = !rndPos.Value; }
                 if (GUILayout.Button($"random pool Position : {customRandomSpawnPosition.Value}")) { customRandomSpawnPosition.Value = !customRandomSpawnPosition.Value; }
 
                 GUILayout.BeginHorizontal();
@@ -871,7 +873,7 @@ namespace FLERP
                 return;
             }
             //logger.LogWarning($"SpawnEnemy {__result.Count}");
-            Vector3 vector3= pair.Item1.transform.localScale;
+            Vector3 vector3 = pair.Item1.transform.localScale;
             //AEnemy a;
             if (eMultRndOn.Value)
             {
