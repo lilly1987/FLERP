@@ -574,6 +574,8 @@ namespace FLERP
             upgradableGadgets = ___upgradableGadgets;
         }
 
+        #region 상점
+
         [HarmonyPatch(typeof(ItemWindow), "OnReroll")]
         [HarmonyPostfix]
         public static void OnReroll(ref int ___rerollCost)
@@ -608,19 +610,28 @@ namespace FLERP
                 //    int tier = shopTier.RollProbability();
                 //    ___currShopGadgets[i] = GadgetData.instance.GetRandomGadget(tier);
                 //}
-                ___currShopGadgets[0] = GadgetData.instance.GetRandomGadget(0);
-                ___currShopGadgets[1] = GadgetData.instance.GetRandomGadget(1);
-                ___currShopGadgets[2] = GadgetData.instance.GetRandomGadget(2);
-                ___currShopGadgets[3] = GadgetData.instance.GetRandomGadget(3);
-                if (upgradableGadgets.Count > 0)
+                if (GadgetManager.instance.CurrGadgetCount< GadgetManager.instance.MaxGadgetCount)
                 {
-                    ___currShopGadgets[4] = upgradableGadgets.ElementAt(UnityEngine.Random.Range(0, upgradableGadgets.Count)).Key;
+                    ___currShopGadgets[0] = GadgetData.instance.GetRandomGadget(0);
+                    ___currShopGadgets[1] = GadgetData.instance.GetRandomGadget(1);
+                    ___currShopGadgets[2] = GadgetData.instance.GetRandomGadget(2);
+                    ___currShopGadgets[3] = GadgetData.instance.GetRandomGadget(3);
+                    if (upgradableGadgets.Count > 0)
+                    {
+                        ___currShopGadgets[4] = upgradableGadgets.ElementAt(UnityEngine.Random.Range(0, upgradableGadgets.Count)).Key;
+                    }
+                    else
+                    {
+                        int tier = shopTier.RollProbability();
+                        ___currShopGadgets[4] = GadgetData.instance.GetRandomGadget(tier);
+                    }
                 }
                 else
                 {
-                    int tier = shopTier.RollProbability();
-                    ___currShopGadgets[4] = GadgetData.instance.GetRandomGadget(tier);
+                    for (int i = 0; i < 5; i++)
+                        ___currShopGadgets[i] = upgradableGadgets.ElementAt(UnityEngine.Random.Range(0, upgradableGadgets.Count)).Key;
                 }
+
                 // GadgetManager.instance.GetGadget(this.currHover.CurrGadget);
                 foreach (BuildGadgetItem buildGadgetItem in ___shopItems)
                 {
@@ -630,6 +641,8 @@ namespace FLERP
             }
             return !customShop.Value;
         }
+
+#endregion
 
         [HarmonyPatch(typeof(XPManager), "GainXP")]
         [HarmonyPrefix]
