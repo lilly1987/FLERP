@@ -168,7 +168,7 @@ namespace FLERP
                 eSpeedMult = Config.Bind("Game", "eSpeedMult", 1f);
 
                 eSizeMult = Config.Bind("Game", "eSizeMult", 1f);
-                eQuantityMult = Config.Bind("Game", "eQuantityMult", 2);
+                eQuantityMult = Config.Bind("Game", "eQuantityMult", 1);
 
                 interval1 = Config.Bind("Game", "interval", 1f/8f);
                 interval2 = Config.Bind("Game", "interval", 1f);
