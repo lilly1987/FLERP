@@ -692,7 +692,7 @@ namespace FLERP
             }
 
             __result = index;
-            logger.LogInfo($"SortValueAt {__result} , {index} , {___sortedList.Count} , {___indexDict.Count}");
+            //logger.LogInfo($"SortValueAt {__result} , {index} , {___sortedList.Count} , {___indexDict.Count}");
             return !sortChg.Value;
         }
 
