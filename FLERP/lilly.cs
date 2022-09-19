@@ -437,7 +437,7 @@ namespace FLERP
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"eSizeMult : {eSizeMult.Value}");
                 GUILayout.FlexibleSpace();
-                if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eSizeMult.Value = 1.5f; }
+                if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eSizeMult.Value = 1f; }
                 if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eSizeMult.Value -= interval1.Value; }
                 if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eSizeMult.Value += interval1.Value; }
                 GUILayout.EndHorizontal();
@@ -595,10 +595,21 @@ namespace FLERP
         [HarmonyPrefix]
         private static bool SortValueAt(ref int __result, int index, List<ValueTuple<GadgetSO, float>> ___sortedList, Dictionary<GadgetSO, int> ___indexDict)
         {
+
             if (sortChg.Value)
             {
-                while (index != ___sortedList.Count - 1 && ___sortedList[index].Item2.CompareTo(___sortedList[index + 1].Item2) > 0)
+                //while (index != 0 && this.sortedList[index].Item2.CompareTo(this.sortedList[index - 1].Item2) > 0)
+                //{
+                //    ValueTuple<T, K> value = this.sortedList[index - 1];
+                //    this.sortedList[index - 1] = this.sortedList[index];
+                //    this.sortedList[index] = value;
+                //    this.indexDict[this.sortedList[index].Item1] = index;
+                //    index--;
+                //}
+                //int max = index;   
+                while (index != ___sortedList.Count-1 && ___sortedList[index].Item2.CompareTo(___sortedList[index + 1].Item2) > 0)
                 {
+                    //logger.LogWarning($"SortValueAt {index} , {___sortedList[index].Item2} , {___sortedList[index + 1].Item2}");
                     ValueTuple<GadgetSO, float> value = ___sortedList[index + 1];
                     ___sortedList[index + 1] = ___sortedList[index];
                     ___sortedList[index] = value;
@@ -607,7 +618,7 @@ namespace FLERP
                 }
                 __result = index;
             }
-            //logger.LogWarning($"SortValueAt {__result} , {___sortedList.Count} , {___indexDict.Count}");
+            //logger.LogWarning($"SortValueAt {__result} , {index} , {___sortedList.Count} , {___indexDict.Count}");
             return !sortChg.Value;
         }
 
@@ -654,6 +665,43 @@ namespace FLERP
             //logger.LogWarning($"GadgetManager.ctor");
             upgradableGadgets = ___upgradableGadgets;
         }
+
+        #region 아이템
+        /*
+        [HarmonyPatch(typeof(ItemManager), MethodType.Constructor)]
+        [HarmonyPostfix]
+        public static void ItemManagerCtor(PauseItem[] ___pauseItemList)
+        {
+            logger.LogWarning($"ItemManager.ctor");
+            ___pauseItemList = new PauseItem[itemMax.Value];
+        }
+
+        [HarmonyPatch(typeof(ItemManager), "CanGetItem", MethodType.Getter)]
+        [HarmonyTranspiler]
+        public static IEnumerable<CodeInstruction> CanGetItem(IEnumerable<CodeInstruction> instructions)
+        {
+            logger.LogWarning($"CanGetItem");
+            
+        }
+
+        [HarmonyPatch(typeof(ItemManager), "Awake")]
+        [HarmonyTranspiler]
+        public static IEnumerable<CodeInstruction> ItemManagerAwake(IEnumerable<CodeInstruction> instructions)
+        {
+            logger.LogWarning($"ItemManagerAwake");
+            
+        }
+        
+        [HarmonyPatch(typeof(ItemManager), "AcquireItem")]
+        [HarmonyTranspiler]
+        public static IEnumerable<CodeInstruction> AcquireItem(IEnumerable<CodeInstruction> instructions)
+        {
+            logger.LogWarning($"ItemManagerAwake");
+            
+        }
+        */
+
+        #endregion
 
         #region 상점
 
