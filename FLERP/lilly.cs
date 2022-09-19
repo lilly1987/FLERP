@@ -629,7 +629,7 @@ namespace FLERP
             logger.LogMessage($"GameEnder.LoseGameCR");
             return GetCodeMatcher(instructions, v1200, vSurvived);
         }
-
+        /*
         public static bool add = false;
 
         [HarmonyPatch(typeof(MySortedList<GadgetSO, float>), "Add")]
@@ -638,7 +638,7 @@ namespace FLERP
         {
             add = true;
         }
-
+        */
         [HarmonyPatch(typeof(MySortedList<GadgetSO, float>), "SortValueAt")]
         [HarmonyPrefix]
         private static bool SortValueAt(ref int __result, ref int index, List<ValueTuple<GadgetSO, float>> ___sortedList, Dictionary<GadgetSO, int> ___indexDict)
@@ -660,16 +660,34 @@ namespace FLERP
                 //    index = 0;
                 //    add=false;
                 //}
-
-                logger.LogMessage($"SortValueAt {index} , {___sortedList[index].Item1.name} , {___sortedList[index].Item2} ");
-                while (index != ___sortedList.Count - 1 && ___sortedList[index].Item2.CompareTo(___sortedList[index + 1].Item2) > 0 && ___sortedList[index + 1].Item2 > 0)
+                //logger.LogMessage($"SortValueAt {index} , {___sortedList[index].Item1.name} , {___sortedList[index].Item2} ");
+                while (
+                    index != ___sortedList.Count-1 
+                    && ___sortedList[index].Item2.CompareTo(___sortedList[index + 1].Item2) > 0 
+                    && ___sortedList[index + 1].Item2 != 0)
                 {
                     ValueTuple<GadgetSO, float> value = ___sortedList[index + 1];
                     ___sortedList[index + 1] = ___sortedList[index];
                     ___sortedList[index] = value;
                     ___indexDict[___sortedList[index].Item1] = index;
-                    logger.LogWarning($"SortValueAt {index} , {___sortedList[index].Item1.name} , {___sortedList[index + 1].Item1.name} , {___sortedList[index].Item2} , {___sortedList[index + 1].Item2}");
+                    //logger.LogWarning($"SortValueAt {index} , {___sortedList[index].Item1.name} , {___sortedList[index + 1].Item1.name} , {___sortedList[index].Item2} , {___sortedList[index + 1].Item2}");
                     index++;
+                }
+
+                while (index != 0 
+                    && ___sortedList[index].Item2>0
+                    &&(
+                        ___sortedList[index].Item2.CompareTo(___sortedList[index - 1].Item2) < 0 
+                        || ___sortedList[index - 1].Item2 == 0
+                    )
+                )
+                {
+                    ValueTuple<GadgetSO, float> value = ___sortedList[index - 1];
+                    ___sortedList[index - 1] = ___sortedList[index];
+                    ___sortedList[index] = value;
+                    ___indexDict[___sortedList[index].Item1] = index;
+                    //logger.LogWarning($"SortValueAt {index} , {___sortedList[index].Item1.name} , {___sortedList[index - 1].Item1.name} , {___sortedList[index].Item2} , {___sortedList[index - 1].Item2}");
+                    index--;
                 }
             }
 
