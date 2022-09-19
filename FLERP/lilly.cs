@@ -49,6 +49,7 @@ namespace FLERP
         public static ConfigEntry<int> baseGadgetCount;
         public static ConfigEntry<int> rerollCostItem;
         public static ConfigEntry<int> addGainXP;
+        public static ConfigEntry<int> vItemMax;
 
         public static ConfigEntry<bool> addGoldNG;
 
@@ -90,11 +91,16 @@ namespace FLERP
         public static ConfigEntry<float> interval2;
         //public const float speed = 1 / 8f;
 
-        public static CodeMatch matches = new CodeMatch(OpCodes.Ldc_I4, 1200);
-        public static CodeInstruction instruction;
+        public static CodeMatch v1200 = new CodeMatch(OpCodes.Ldc_I4, 1200);
+        public static CodeMatch v10 = new CodeMatch(OpCodes.Ldc_I4_S, (SByte)10);
+        public static CodeInstruction vSurvived;
+        public static CodeInstruction vItem;
 
         static XPPicker xPPicker;
         static System.Reflection.FieldInfo pickupRadius_;
+
+        static float eMultRndMin;
+        static float eMultRndMax;
 
         public void Awake()
         {
@@ -125,7 +131,7 @@ namespace FLERP
                 //buildGadgetMenu = AccessTools.TypeByName("BuildGadgetMenu");
                 buildGadgetMenu = typeof(BuildGadgetMenu);
 
-                Logger.LogMessage("Awake1");
+                Logger.LogMessage("play");
 
                 sortChg = Config.Bind("Game", "sortChg", true);
 
@@ -134,6 +140,10 @@ namespace FLERP
                 survivedOn = Config.Bind("Game", "survivedOn", true);
                 survived = Config.Bind("Game", "survived", 0);
 
+                vItemMax = Config.Bind("Game", "vItemMax", 20);
+
+                Logger.LogMessage("shop");
+
                 rerollCost = Config.Bind("Game", "rerollCost", 1);
                 rerollCostItem = Config.Bind("Game", "rerollCostItem", 4);
                 baseGadgetCount = Config.Bind("Game", "baseGadgetCount", 8);
@@ -141,12 +151,12 @@ namespace FLERP
 
                 customShop = Config.Bind("Game", "customShop", true);
 
-                Logger.LogMessage("Awake2");
+                Logger.LogMessage("xp");
 
                 pickupRadius = Config.Bind("Game", "pickupRadius", 50f);
                 addGainXP = Config.Bind("Game", "addGainXP", 1);
 
-                Logger.LogMessage("Awake3");
+                Logger.LogMessage("r");
 
                 customRandomSpawnPosition = Config.Bind("Game", "customRandomSpawnPosition", true);
                 rndPos = Config.Bind("Game", "rndPos", true);
@@ -160,7 +170,7 @@ namespace FLERP
 
                 eMultRnd = Config.Bind("Game", "eMultRnd", 1.25f);
 
-                Logger.LogMessage("Awake4");
+                Logger.LogMessage("e");
 
                 eHealthMult = Config.Bind("Game", "eHealthMult", 1f);
                 eArmorMult = Config.Bind("Game", "eArmorMult", 1f);
@@ -173,7 +183,7 @@ namespace FLERP
                 interval1 = Config.Bind("Game", "interval", 1f / 8f);
                 interval2 = Config.Bind("Game", "interval", 1f);
 
-                Logger.LogMessage("Awake5");
+                Logger.LogMessage("m");
 
                 //eHealthAdd = Config.Bind("Game", "eHealthAdd", 1f);
                 //eArmorAdd = Config.Bind("Game", "eArmorAdd", 1f);
@@ -185,9 +195,15 @@ namespace FLERP
 
                 Logger.LogMessage("Awake6");
 
-                instruction = new CodeInstruction(
+                SetRndValue();
+
+                vSurvived = new CodeInstruction(
                                                 OpCodes.Ldc_I4,
                                                 survived.Value
+                                                );
+                vItem = new CodeInstruction(
+                                                OpCodes.Ldc_I4,
+                                                vItemMax.Value
                                                 );
                 pickupRadius_ = AccessTools.Field(typeof(XPPicker), "pickupRadius");
             }
@@ -237,7 +253,6 @@ namespace FLERP
                 isOpen.Value = !isOpen.Value;
             }
         }
-
 
         public void OnGUI()
         {
@@ -398,8 +413,8 @@ namespace FLERP
                 GUILayout.Label($"eMultRnd : {eMultRnd.Value}");
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("1", GUILayout.Width(20), GUILayout.Height(20))) { eMultRnd.Value = 1f; }
-                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eMultRnd.Value -= interval1.Value; }
-                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eMultRnd.Value += interval1.Value; }
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { eMultRnd.Value -= interval1.Value; SetRndValue(); }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { eMultRnd.Value += interval1.Value; SetRndValue(); }
                 GUILayout.EndHorizontal();
 
                 GUILayout.BeginHorizontal();
@@ -522,7 +537,23 @@ namespace FLERP
             GUI.DragWindow(); // 창 드레그 가능하게 해줌. 마지막에만 넣어야함
         }
 
-
+        private static void SetRndValue()
+        {
+            if (eMultRnd.Value < 1f)
+            {
+                if (eMultRnd.Value < interval1.Value)
+                {
+                    eMultRnd.Value = interval1.Value;
+                }
+                eMultRndMin = eMultRnd.Value;
+                eMultRndMax = 1f;
+            }
+            else
+            {
+                eMultRndMin = 1f;
+                eMultRndMax = eMultRnd.Value;
+            }
+        }
 
         public void OnDisable()
         {
@@ -531,36 +562,41 @@ namespace FLERP
 
         }
 
-        #region Play
+        #region 변수 및 선언
 
-        /*
-        static Clock clock;
+        public static Dictionary<GadgetSO, AGadget> upgradableGadgets;
 
-        [HarmonyPatch(typeof(Clock), MethodType.Constructor)]
+        [HarmonyPatch(typeof(GadgetManager), MethodType.Constructor)]
         [HarmonyPostfix]
-        public static void ClockCtor(Clock __instance)
+        public static void GadgetManagerCtor(ref Dictionary<GadgetSO, AGadget> ___upgradableGadgets)
         {
-            clock = __instance;
+            //logger.LogWarning($"GadgetManager.ctor");
+            upgradableGadgets = ___upgradableGadgets;
         }
-        */
-        private static IEnumerable<CodeInstruction> GetCodeMatcher(IEnumerable<CodeInstruction> instructions)
+
+        private static IEnumerable<CodeInstruction> GetCodeMatcher(IEnumerable<CodeInstruction> instructions, CodeMatch codeMatches, CodeInstruction codeInstruction)
         {
             try
             {
+                logger.LogWarning($"{codeMatches?.opcodes[0]},{codeMatches?.operands[0]} , {codeMatches?.operands[0].GetType().Name}");
                 var c = new CodeMatcher(instructions);
                 for (int i = 0; ; i++)
                 {
-                    c = c.MatchForward(false, matches);
+                    c = c.MatchForward(false, codeMatches);
                     logger.LogMessage($"CodeMatcher , {i} , {c.Pos} , {c.Length}");
                     if (c.Pos < c.Length)
                     {
-                        c = c.SetInstruction(instruction);
+                        c = c.SetInstruction(codeInstruction);
                     }
                     else
                     {
                         if (i == 0)
                         {
                             logger.LogError($"CodeMatcher not match");
+                            foreach (var item in instructions)
+                            {
+                                logger.LogWarning($"{item.opcode},{item.operand} , {codeMatches?.opcodes[0] == item.opcode} , {codeMatches?.operands[0] == item.operand} , {item.operand?.GetType().Name}");
+                            }
                         }
                         return c.InstructionEnumeration();
                     }
@@ -573,12 +609,16 @@ namespace FLERP
             }
         }
 
+        #endregion
+
+        #region Play
+
         [HarmonyPatch(typeof(GameEnder), "InitiateLoseGame")]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> InitiateLoseGame(IEnumerable<CodeInstruction> instructions)
         {
             logger.LogMessage($"GameEnder.InitiateLoseGame");
-            return GetCodeMatcher(instructions);
+            return GetCodeMatcher(instructions, v1200, vSurvived);
         }
 
 
@@ -587,13 +627,21 @@ namespace FLERP
         public static IEnumerable<CodeInstruction> LoseGameCR(IEnumerable<CodeInstruction> instructions)
         {
             logger.LogMessage($"GameEnder.LoseGameCR");
-            return GetCodeMatcher(instructions);
+            return GetCodeMatcher(instructions, v1200, vSurvived);
         }
 
+        public static bool add = false;
+
+        [HarmonyPatch(typeof(MySortedList<GadgetSO, float>), "Add")]
+        [HarmonyPrefix]
+        private static void Add()
+        {
+            add = true;
+        }
 
         [HarmonyPatch(typeof(MySortedList<GadgetSO, float>), "SortValueAt")]
         [HarmonyPrefix]
-        private static bool SortValueAt(ref int __result, int index, List<ValueTuple<GadgetSO, float>> ___sortedList, Dictionary<GadgetSO, int> ___indexDict)
+        private static bool SortValueAt(ref int __result, ref int index, List<ValueTuple<GadgetSO, float>> ___sortedList, Dictionary<GadgetSO, int> ___indexDict)
         {
 
             if (sortChg.Value)
@@ -607,31 +655,50 @@ namespace FLERP
                 //    index--;
                 //}
                 //int max = index;   
-                while (index != ___sortedList.Count-1 && ___sortedList[index].Item2.CompareTo(___sortedList[index + 1].Item2) > 0)
+                //if (add)
+                //{
+                //    index = 0;
+                //    add=false;
+                //}
+
+                logger.LogMessage($"SortValueAt {index} , {___sortedList[index].Item1.name} , {___sortedList[index].Item2} ");
+                while (index != ___sortedList.Count - 1 && ___sortedList[index].Item2.CompareTo(___sortedList[index + 1].Item2) > 0 && ___sortedList[index + 1].Item2 > 0)
                 {
-                    //logger.LogWarning($"SortValueAt {index} , {___sortedList[index].Item2} , {___sortedList[index + 1].Item2}");
                     ValueTuple<GadgetSO, float> value = ___sortedList[index + 1];
                     ___sortedList[index + 1] = ___sortedList[index];
                     ___sortedList[index] = value;
                     ___indexDict[___sortedList[index].Item1] = index;
+                    logger.LogWarning($"SortValueAt {index} , {___sortedList[index].Item1.name} , {___sortedList[index + 1].Item1.name} , {___sortedList[index].Item2} , {___sortedList[index + 1].Item2}");
                     index++;
                 }
-                __result = index;
             }
-            //logger.LogWarning($"SortValueAt {__result} , {index} , {___sortedList.Count} , {___indexDict.Count}");
+
+            __result = index;
+            logger.LogInfo($"SortValueAt {__result} , {index} , {___sortedList.Count} , {___indexDict.Count}");
             return !sortChg.Value;
         }
 
-        #endregion
-
-        [HarmonyPatch(typeof(BuildGadgetMenu), MethodType.Constructor)]
+        [HarmonyPatch(typeof(MoneyManager), "Awake")]
         [HarmonyPostfix]
-        public static void BuildGadgetMenuCtor(ref int ___rerollCost)
+        public static void Awake2()
         {
-            //logger.LogWarning($"BuildGadgetMenu.ctor {___rerollCost}");
-            //rerollCost = ___rerollCost;
-            ___rerollCost = rerollCost.Value;
-            //rerollCost=(int) AccessTools.Field(buildGadgetMenu, "rerollCost").GetValue(BuildGadgetMenu.instance);
+            if (addGoldNG.Value)
+            {
+                //logger.LogWarning($"MoneyManager Awake2 {MoneyManager.instance.MoneyAmount} , {OptionsManager.CurrNgLevel}");
+                MoneyManager.instance.AddMoney(OptionsManager.CurrNgLevel);
+            }
+        }
+
+
+        [HarmonyPatch(typeof(HealthManager), "SetMaxHealth")]
+        [HarmonyPrefix]
+        public static void SetMaxHealth(ref float maxHealth, bool ___isFriendly)
+        {
+            if (___isFriendly)
+            {
+                //logger.LogWarning($"SetMaxHealth {maxHealth}");
+                maxHealth *= mHealthMult.Value;
+            }
         }
 
         [HarmonyPatch(typeof(GadgetManager), "SetMaxGadgetCount")]
@@ -644,7 +711,9 @@ namespace FLERP
             return false;
         }
 
+        #endregion
 
+        #region XP
 
         [HarmonyPatch(typeof(XPPicker), MethodType.Constructor)]
         [HarmonyPostfix]
@@ -656,24 +725,31 @@ namespace FLERP
 
         }
 
-        public static Dictionary<GadgetSO, AGadget> upgradableGadgets;
-
-        [HarmonyPatch(typeof(GadgetManager), MethodType.Constructor)]
-        [HarmonyPostfix]
-        public static void GadgetManagerCtor(ref Dictionary<GadgetSO, AGadget> ___upgradableGadgets)
+        [HarmonyPatch(typeof(XPManager), "GainXP")]
+        [HarmonyPrefix]
+        public static void GainXP(ref int ___currXP, int xpId)
         {
-            //logger.LogWarning($"GadgetManager.ctor");
-            upgradableGadgets = ___upgradableGadgets;
+            //logger.LogWarning($"RemoveFromShop");
+            if (GameEnder.GameOver)
+            {
+                return;
+            }
+            if (xpId == 0)
+            {
+                ___currXP += addGainXP.Value;
+            }
         }
 
+        #endregion
+
         #region 아이템
-        /*
+
         [HarmonyPatch(typeof(ItemManager), MethodType.Constructor)]
         [HarmonyPostfix]
-        public static void ItemManagerCtor(PauseItem[] ___pauseItemList)
+        public static void ItemManagerCtor(ref PauseItem[] ___pauseItemList)
         {
             logger.LogWarning($"ItemManager.ctor");
-            ___pauseItemList = new PauseItem[itemMax.Value];
+            ___pauseItemList = new PauseItem[vItemMax.Value];
         }
 
         [HarmonyPatch(typeof(ItemManager), "CanGetItem", MethodType.Getter)]
@@ -681,7 +757,7 @@ namespace FLERP
         public static IEnumerable<CodeInstruction> CanGetItem(IEnumerable<CodeInstruction> instructions)
         {
             logger.LogWarning($"CanGetItem");
-            
+            return GetCodeMatcher(instructions, v10, vItem);
         }
 
         [HarmonyPatch(typeof(ItemManager), "Awake")]
@@ -689,21 +765,16 @@ namespace FLERP
         public static IEnumerable<CodeInstruction> ItemManagerAwake(IEnumerable<CodeInstruction> instructions)
         {
             logger.LogWarning($"ItemManagerAwake");
-            
+            return GetCodeMatcher(instructions, v10, vItem);
         }
-        
+
         [HarmonyPatch(typeof(ItemManager), "AcquireItem")]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> AcquireItem(IEnumerable<CodeInstruction> instructions)
         {
-            logger.LogWarning($"ItemManagerAwake");
-            
+            logger.LogWarning($"AcquireItem");
+            return GetCodeMatcher(instructions, v10, vItem);
         }
-        */
-
-        #endregion
-
-        #region 상점
 
         [HarmonyPatch(typeof(ItemWindow), "OnReroll")]
         [HarmonyPostfix]
@@ -713,6 +784,23 @@ namespace FLERP
             ___rerollCost -= rerollCostItem.Value;
             //ItemWindow.instance.UpdateRerollText();
         }
+
+        #endregion
+
+        #region 상점
+
+        [HarmonyPatch(typeof(BuildGadgetMenu), MethodType.Constructor)]
+        [HarmonyPostfix]
+        public static void BuildGadgetMenuCtor(ref int ___rerollCost)
+        {
+            //logger.LogWarning($"BuildGadgetMenu.ctor {___rerollCost}");
+            //rerollCost = ___rerollCost;
+            ___rerollCost = rerollCost.Value;
+            //rerollCost=(int) AccessTools.Field(buildGadgetMenu, "rerollCost").GetValue(BuildGadgetMenu.instance);
+        }
+
+
+
 
         [HarmonyPatch(typeof(BuildGadgetMenu), "RemoveFromShop")]
         [HarmonyPrefix]
@@ -773,64 +861,26 @@ namespace FLERP
 
         #endregion
 
-        [HarmonyPatch(typeof(XPManager), "GainXP")]
-        [HarmonyPrefix]
-        public static void GainXP(ref int ___currXP, int xpId)
-        {
-            //logger.LogWarning($"RemoveFromShop");
-            if (GameEnder.GameOver)
-            {
-                return;
-            }
-            if (xpId == 0)
-            {
-                ___currXP += addGainXP.Value;
-            }
-        }
-        /*
-        [HarmonyPatch(typeof(EnemySpawner), "SpawnEnemy")]
-        [HarmonyPostfix]
-        public static void HealthMult(ref List<GameObject> __result, float ___currNgBuffRatio)
-        {
-            if (!eMultOn.Value)
-            {
-                return ;
-            }
-            foreach (GameObject gameObject in __result)
-            {
-                gameObject.GetComponent<HealthManager>().SetMaxHealthModifier(EnemySpawner.instance.HealthMult * (1f + 0.8f * ___currNgBuffRatio)* eHealthMult.Value);
-                gameObject.GetComponent<HealthUnit>().ArmorMult*=eArmorMult.Value;
-                gameObject.GetComponent<Steerer>().MoveSpeedMult*=eSpeedMult.Value;
-                gameObject.GetComponent<AEnemy>().DamageMult*=eDamageMult.Value;
-            }
-        }
-        */
-
-
-        [HarmonyPatch(typeof(MoneyManager), "Awake")]
-        [HarmonyPostfix]
-        public static void Awake2()
-        {
-            if (addGoldNG.Value)
-            {
-                //logger.LogWarning($"MoneyManager Awake2 {MoneyManager.instance.MoneyAmount} , {OptionsManager.CurrNgLevel}");
-                MoneyManager.instance.AddMoney(OptionsManager.CurrNgLevel);
-            }
-        }
-
-
-        [HarmonyPatch(typeof(HealthManager), "SetMaxHealth")]
-        [HarmonyPrefix]
-        public static void SetMaxHealth(ref float maxHealth, bool ___isFriendly)
-        {
-            if (___isFriendly)
-            {
-                //logger.LogWarning($"SetMaxHealth {maxHealth}");
-                maxHealth *= mHealthMult.Value;
-            }
-        }
-
         #region 적
+
+        /*
+[HarmonyPatch(typeof(EnemySpawner), "SpawnEnemy")]
+[HarmonyPostfix]
+public static void HealthMult(ref List<GameObject> __result, float ___currNgBuffRatio)
+{
+    if (!eMultOn.Value)
+    {
+        return ;
+    }
+    foreach (GameObject gameObject in __result)
+    {
+        gameObject.GetComponent<HealthManager>().SetMaxHealthModifier(EnemySpawner.instance.HealthMult * (1f + 0.8f * ___currNgBuffRatio)* eHealthMult.Value);
+        gameObject.GetComponent<HealthUnit>().ArmorMult*=eArmorMult.Value;
+        gameObject.GetComponent<Steerer>().MoveSpeedMult*=eSpeedMult.Value;
+        gameObject.GetComponent<AEnemy>().DamageMult*=eDamageMult.Value;
+    }
+}
+*/
 
         public static float SetMult(float modifier, float m)
         {
@@ -840,7 +890,7 @@ namespace FLERP
             }
             if (eMultRndOn.Value)
             {
-                modifier *= m * UnityEngine.Random.Range(1f, eMultRnd.Value);
+                modifier *= m * UnityEngine.Random.Range(eMultRndMin, eMultRndMax);
             }
             else
             {
