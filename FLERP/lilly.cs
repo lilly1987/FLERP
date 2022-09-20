@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace FLERP
 {
-    [BepInPlugin("Game.Lilly.Plugin", "Lilly", "1.0")]
+    [BepInPlugin("Game.Lilly.Plugin", "Lilly", "1.1.2.3")]
     public class Lilly : BaseUnityPlugin
     {
         //=======================================================
@@ -239,7 +239,15 @@ namespace FLERP
         {
             Logger.LogWarning("OnEnable");
             // 하모니 패치
-            harmony = Harmony.CreateAndPatchAll(typeof(Lilly));
+            try
+            {
+                harmony = Harmony.CreateAndPatchAll(typeof(Lilly));
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e);
+            }
+
         }
 
         public void Update()
@@ -347,7 +355,15 @@ namespace FLERP
                 if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { rerollCostItem.Value--; }
                 if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { rerollCostItem.Value++; }
                 GUILayout.EndHorizontal();
-                //
+
+                GUILayout.Label("--- need restart ---");
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"Item max : {vItemMax.Value}");
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("-", GUILayout.Width(20), GUILayout.Height(20))) { vItemMax.Value--; }
+                if (GUILayout.Button("+", GUILayout.Width(20), GUILayout.Height(20))) { vItemMax.Value++; }
+                GUILayout.EndHorizontal();
+                
 
                 GUILayout.Label("=== XP ===");
 
@@ -578,7 +594,26 @@ namespace FLERP
         {
             try
             {
-                logger.LogWarning($"{codeMatches?.opcodes[0]},{codeMatches?.operands[0]} , {codeMatches?.operands[0].GetType().Name}");
+                //logger.LogWarning($"{codeMatches?.opcodes?[0]},{codeMatches?.operands?[0]} , {codeMatches?.operands?[0].GetType().Name}");
+                logger.LogWarning($"opcodes {codeMatches.opcodes.Count}");
+                for (int i = 0; i < codeMatches.opcodes.Count; i++)
+                {
+                    logger.LogWarning($"{codeMatches.opcodes[i]}");
+                }                
+                logger.LogWarning($"operands {codeMatches.operands.Count}");
+                for (int i = 0; i < codeMatches.operands.Count; i++)
+                {
+                    logger.LogWarning($"{codeMatches?.operands[i]} , {codeMatches.operands[i].GetType().Name}");
+                }
+                logger.LogWarning($"codeInstruction {codeInstruction?.opcode},{codeInstruction?.operand} , {codeInstruction?.operand.GetType().Name}");
+            }
+            catch (Exception e)
+            {
+                logger.LogError($"CodeMatcher1 {e}");
+                return instructions;
+            }
+            try
+            {
                 var c = new CodeMatcher(instructions);
                 for (int i = 0; ; i++)
                 {
@@ -595,7 +630,7 @@ namespace FLERP
                             logger.LogError($"CodeMatcher not match");
                             foreach (var item in instructions)
                             {
-                                logger.LogWarning($"{item.opcode},{item.operand} , {codeMatches?.opcodes[0] == item.opcode} , {codeMatches?.operands[0] == item.operand} , {item.operand?.GetType().Name}");
+                                logger.LogWarning($"{item.opcode},{item.operand} ");//, { codeMatches?.opcodes[0] == item.opcode} , {codeMatches?.operands[0] == item.operand} , {item.operand?.GetType().Name}");
                             }
                         }
                         return c.InstructionEnumeration();
@@ -604,7 +639,7 @@ namespace FLERP
             }
             catch (Exception e)
             {
-                logger.LogError($"CodeMatcher {e}");
+                logger.LogError($"CodeMatcher2 {e}");
                 return instructions;
             }
         }
@@ -747,7 +782,7 @@ namespace FLERP
         [HarmonyPrefix]
         public static void GainXP(ref int ___currXP, int xpId)
         {
-            //logger.LogWarning($"RemoveFromShop");
+            //logger.LogWarning($"XPManager.GainXP : {___currXP}");
             if (GameEnder.GameOver)
             {
                 return;
@@ -762,6 +797,13 @@ namespace FLERP
 
         #region 아이템
 
+        [HarmonyPatch(typeof(ItemWindow), "SetupItemScreen")]
+        [HarmonyPrefix]
+        public static void SetupItemScreen()
+        {
+            logger.LogWarning($"ItemManager.SetupItemScreen");
+        }
+
         [HarmonyPatch(typeof(ItemManager), MethodType.Constructor)]
         [HarmonyPostfix]
         public static void ItemManagerCtor(ref PauseItem[] ___pauseItemList)
@@ -770,6 +812,37 @@ namespace FLERP
             ___pauseItemList = new PauseItem[vItemMax.Value];
         }
 
+        /// <summary>
+        /// 실제론 작동 안함
+        /// </summary>
+        /// <param name="__result"></param>
+        /// <param name="___numItemsAcquired"></param>
+        /// <param name="___pauseItemList"></param>
+        /// <returns></returns>
+        [HarmonyPatch(typeof(ItemManager), "CanGetItem", MethodType.Getter)]
+        //[HarmonyPatch(typeof(ItemManager), "get_CanGetItem")]
+        [HarmonyPrefix]
+        public static bool CanGetItem(ref bool __result,ref int ___numItemsAcquired, ref PauseItem[] ___pauseItemList)
+        {
+            __result = ___numItemsAcquired < vItemMax.Value; //vItemMax.Value;
+            logger.LogWarning($"CanGetItem {__result} , {___numItemsAcquired} {___pauseItemList.Length}");
+            return false;
+        }
+        /*
+
+        [HarmonyPatch(typeof(ItemManager), "Awake")]
+        [HarmonyPrefix]
+        public static void ItemManagerAwake(ref int ___numItemsAcquired)
+        {
+            logger.LogWarning($"ItemManager.Awake {___numItemsAcquired}");            
+        }
+
+        [HarmonyPatch(typeof(ItemManager), "AcquireItem")]
+        [HarmonyPrefix]
+        public static void ItemManagerAcquireItem(ref int ___numItemsAcquired)
+        {
+            logger.LogWarning($"ItemManager.AcquireItem {___numItemsAcquired}");            
+        }
         [HarmonyPatch(typeof(ItemManager), "CanGetItem", MethodType.Getter)]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> CanGetItem(IEnumerable<CodeInstruction> instructions)
@@ -777,7 +850,7 @@ namespace FLERP
             logger.LogWarning($"CanGetItem");
             return GetCodeMatcher(instructions, v10, vItem);
         }
-
+        */
         [HarmonyPatch(typeof(ItemManager), "Awake")]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> ItemManagerAwake(IEnumerable<CodeInstruction> instructions)
@@ -793,6 +866,37 @@ namespace FLERP
             logger.LogWarning($"AcquireItem");
             return GetCodeMatcher(instructions, v10, vItem);
         }
+        /*
+
+        public static bool CanGetItem2()
+        {
+            var f=(int)AccessTools.Field(typeof(ItemManager), "numItemsAcquired").GetValue(ItemManager.instance);
+            logger.LogWarning($"CanGetItem2 {f} , {vItemMax.Value}");
+            return f < vItemMax.Value;
+        }
+
+
+       [HarmonyPatch(typeof(XPManager), "GainXP")]
+        [HarmonyTranspiler]
+        public static IEnumerable<CodeInstruction> GainXP(IEnumerable<CodeInstruction> instructions)
+        {
+            logger.LogWarning($"GainXP");
+            //
+            return GetCodeMatcher(instructions
+                , new CodeMatch(
+                    OpCodes.Callvirt,
+                    //typeof(ItemManager).GetMethod("CanGetItem", System.Reflection.BindingFlags.GetProperty)
+                    AccessTools.Method(typeof(ItemManager), "get_CanGetItem")
+                    )
+                , new CodeInstruction(
+                    OpCodes.Callvirt,
+                    //typeof(Lilly).GetMethod("CanGetItem2",System.Reflection.BindingFlags.all)
+                    AccessTools.Method(typeof(Lilly), "CanGetItem2")
+                    )
+                );
+        }
+        */
+        // =============================================
 
         [HarmonyPatch(typeof(ItemWindow), "OnReroll")]
         [HarmonyPostfix]
