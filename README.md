@@ -1,10 +1,10 @@
 # FLERP BepInEx Plugin
 
+모든 플러그인 최신 가이드는 https://github.com/lilly1987/BepInPluginSample 를 참조  
+ 
 ![2022-09-17 14 45 12](https://user-images.githubusercontent.com/20321215/190842459-185831fa-8676-4040-8295-eee702444027.png)  
 ![2022-09-17 14 45 04](https://user-images.githubusercontent.com/20321215/190842460-092a8071-808b-4d6a-9996-58104f1762fd.png)  
 
-플러그인 설치법은 https://github.com/lilly1987/BepInPluginSample 참조  
-need BepInEx 5 https://github.com/BepInEx/BepInEx/releases  
 
 #
 
